@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 
 interface RightSidebarProps {
   selectedLight: District['lightBulbs'][0] | null;
-  handleToggleLight: (lightId: string) => void; // Change parameter to accept only lightId
+  handleToggleLight: (lightId: string) => void; 
 }
 
 export const RightSidebar = ({ selectedLight, handleToggleLight }: RightSidebarProps) => {
@@ -21,7 +21,7 @@ export const RightSidebar = ({ selectedLight, handleToggleLight }: RightSidebarP
   }
 
   const toggleLight = () => {
-    handleToggleLight(selectedLight.id); // Call the function with only lightId
+    handleToggleLight(selectedLight.id); 
     setIsOn((prevState) => !prevState); 
   };
 
