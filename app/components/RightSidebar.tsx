@@ -1,35 +1,46 @@
+import { useEffect, useState } from 'react';
 import { District } from '@/types/lightTypes';
+import { Button } from './ui/button';
 
 interface RightSidebarProps {
-  selectedLight: District['lightBulbs'][0] | null; 
+  selectedLight: District['lightBulbs'][0] | null;
+  handleToggleLight: (lightId: string) => void; // Change parameter to accept only lightId
 }
 
-export const RightSidebar = ({ selectedLight }: RightSidebarProps) => {
+export const RightSidebar = ({ selectedLight, handleToggleLight }: RightSidebarProps) => {
+  const [isOn, setIsOn] = useState<boolean>(false); 
+
+  useEffect(() => {
+    if (selectedLight) {
+      setIsOn(selectedLight.isOn);
+    }
+  }, [selectedLight]);
+
   if (!selectedLight) {
-    return <div className="w-1/4 p-4">No light selected</div>;
+    return <div className="w-1/4 p-10 text-lg mt-1">No light selected</div>;
   }
 
+  const toggleLight = () => {
+    handleToggleLight(selectedLight.id); // Call the function with only lightId
+    setIsOn((prevState) => !prevState); 
+  };
+
   return (
-    <div className="w-1/4 p-4 bg-gray-100 h-full">
-      <h3 className="text-lg font-semibold mb-2">{selectedLight.name} - Stats</h3>
+    <div className="w-1/4 p-10 h-full">
+      <h3 className="text-lg font-semibold mt-1">{selectedLight.name} - Stats</h3>
       <p>Power Consumption: {selectedLight.powerUsage} W</p>
       <p>Hours Active: {selectedLight.hoursActive} hours/day</p>
-      <p>Current Status: {selectedLight.isOn ? 'On' : 'Off'}</p>
-      <p>Schedule: 
-        {selectedLight.schedule.on} - {selectedLight.schedule.off}
-      </p>
+      <p>Current Status: {isOn ? 'On' : 'Off'}</p>
+      <p>Schedule: {selectedLight.schedule.on} - {selectedLight.schedule.off}</p>
       <div className="mt-4">
-        <button
-          onClick={() => {
-            const confirmed = window.confirm(`Do you want to turn ${selectedLight.isOn ? 'off' : 'on'} this light?`);
-            if (confirmed) {
-                
-            }
-          }}
-          className={`btn ${selectedLight.isOn ? 'bg-red-500' : 'bg-green-500'} text-white`}
+        <Button
+          variant={isOn ? "default" : "outline"}
+          size="sm"
+          onClick={toggleLight}
+          disabled={!selectedLight.isConnected}
         >
-          {selectedLight.isOn ? 'Turn Off' : 'Turn On'}
-        </button>
+          {isOn ? 'Turn Off' : 'Turn On'}
+        </Button>
       </div>
     </div>
   );
