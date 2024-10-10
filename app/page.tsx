@@ -5,6 +5,7 @@ import { Map } from '@/components/Map'
 import { District } from '@/types/lightTypes'
 
 import { mockDistricts } from '@/data/mockData';
+import { RightSidebar } from './components/RightSidebar'
 
 
 
@@ -12,7 +13,12 @@ export default function HomePage() {
   const [districts, setDistricts] = useState<District[]>(mockDistricts)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null)
+  const [selectedLight, setSelectedLight] = useState<District['lightBulbs'][0] | null>(null);
 
+  const handleSelectLight = (lightId: string) => {
+    const foundLight = districts.flatMap(d => d.lightBulbs).find(l => l.id === lightId);
+    setSelectedLight(foundLight || null);
+  };
   const handleToggleLight = (districtId: string, lightId: string) => {
     setDistricts(districts.map(district => {
       if (district.id === districtId) {
@@ -80,15 +86,18 @@ export default function HomePage() {
           setSearchTerm={setSearchTerm}
           selectedDistrict={selectedDistrict}
           setSelectedDistrict={setSelectedDistrict}
-          handleBulkAction={handleBulkAction}
           filteredDistricts={filteredDistricts}
           handleToggleLight={handleToggleLight}
           handleDisconnectLight={handleDisconnectLight}
         />
       </div>
       <div className="flex-grow z-0 h-[60vh] lg:h-screen lg:w-screen">
-        <Map districts={districts} handleToggleLight={handleToggleLight} />
+        <Map districts={districts} handleToggleLight={handleToggleLight} handleSelectLight={handleSelectLight} />
       </div>
+      <div className="bg-white absolute right-0 z-5 w-full lg:w-1/5 h-[40vh] lg:h-full">
+        <RightSidebar selectedLight={selectedLight} />
+      </div>
+
     </div>
   )
 }
