@@ -11,12 +11,16 @@ export type LightBulb = {
   isOn: boolean;
   isConnected: boolean;
   powerUsage: number;    
-  hoursActive: number;   
+  voltage: number;   
+  amperage: number;
   schedule: Schedule;    
 }
 
 export type District = {
   id: string;
   name: string;
+  lat: number;
+  lng: number;
+  numberOfLights: number;
   lightBulbs: LightBulb[];
 }
