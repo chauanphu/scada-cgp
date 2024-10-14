@@ -38,7 +38,7 @@ export const LeftSidebar = ({
     <div className="flex flex-col h-full">
       <div className="px-4 py-4 border-b border-gray-200">
         <CardHeader>
-          <h3 className="text-lg font-semibold mb-2">Danh sách đèn ở các Quận</h3>
+          <h3 className="text-lg font-semibold mb-2">Danh sách tủ điều khiển</h3>
           <div className="relative mb-4">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input
