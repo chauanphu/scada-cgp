@@ -3,13 +3,6 @@
 
 const API_URL = process.env.API_URL;
 
-type Unit = {
-  name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-};
-
 type Cluster = {
   id: number;
   name: string;
@@ -133,4 +126,67 @@ export async function deleteUser(token: string, userId: number): Promise<void> {
   if (!response.ok) {
     throw new Error('Failed to delete user');
   }
+}
+
+export type Unit = {
+  id: number,
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+}
+
+export type UserShortened = {
+  user_id: number;
+  username: string;
+}
+
+export type ClusterFull = {
+  name: string;
+  id: number;
+  units: Unit[];
+  account: UserShortened;
+  created: string;
+  updated: string;
+};
+
+export async function getFullClusters(token: string): Promise<ClusterFull> {
+  // Get token from cookie
+  
+  const response = await fetch(`${API_URL}/clusters`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch cluster');
+  }
+
+  return response.json();
+}
+
+export type CreateClusterData = {
+  name: string;
+  units: Partial<Unit[]>;
+  account_id: number;
+}
+
+// Create a new cluster
+//Body: {name: string, units: Unit[], account_id: number}
+export async function createCluster(token: string, clusterData: CreateClusterData): Promise<ClusterFull> {
+  const response = await fetch(`${API_URL}/clusters`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(clusterData),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create cluster');
+  }
+
+  return response.json();
 }

@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     // If 401, return unauthorized
     if (error.message === 'Failed to fetch users') {
+      // Redirect to login page
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
