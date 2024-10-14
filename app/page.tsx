@@ -32,7 +32,6 @@ export default function HomePage() {
     });
   };
   
-
   const filteredDistricts = districts.map(district => ({
     ...district,
     lightBulbs: district.lightBulbs.filter(light =>
