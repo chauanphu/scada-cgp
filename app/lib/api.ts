@@ -93,7 +93,7 @@ export async function getUsers(token: string): Promise<User[]> {
   return data;
 }
 
-export async function roleCheck(token: string): Promise<Role> {
+export async function roleCheck(token: string): Promise<boolean> {
   const response = await fetch(`${API_URL}/auth/user/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -105,10 +105,17 @@ export async function roleCheck(token: string): Promise<Role> {
   }
 
   const data = await response.json();
-  return data.role;
+  return data.role === Role.Admin;  
 }
 
+
 export async function createUser(token: string, userData: Partial<User>): Promise<User> {
+  
+  const isAdmin = await roleCheck(token);  
+  if (!isAdmin) {
+    throw new Error('Access denied: Admin privileges required');
+  }
+
   const response = await fetch(`${API_URL}/auth/user`, {
     method: 'POST',
     headers: {
@@ -126,6 +133,11 @@ export async function createUser(token: string, userData: Partial<User>): Promis
 }
 
 export async function updateUser(token: string, userId: number, userData: Partial<User>): Promise<User> {
+  const isAdmin = await roleCheck(token);  
+  if (!isAdmin) {
+    throw new Error('Access denied: Admin privileges required');
+  }
+
   const response = await fetch(`${API_URL}/auth/user/${userId}`, {
     method: 'PATCH',
     headers: {
@@ -143,6 +155,11 @@ export async function updateUser(token: string, userId: number, userData: Partia
 }
 
 export async function deleteUser(token: string, userId: number): Promise<void> {
+  const isAdmin = await roleCheck(token);  
+  if (!isAdmin) {
+    throw new Error('Access denied: Admin privileges required');
+  }
+
   const response = await fetch(`${API_URL}/auth/user/${userId}`, {
     method: 'DELETE',
     headers: {
