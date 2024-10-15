@@ -1,25 +1,23 @@
-import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Search } from 'lucide-react'
-import { useState } from "react";
+import { CardHeader, CardContent } from "@/components/ui/card"
 import { District } from '@/types/lightTypes';
 
+
 interface LeftSidebarProps {
-  searchTerm: string
-  setSearchTerm: (term: string) => void
-  selectedDistrict: string | null
-  setSelectedDistrict: (id: string | null) => void
-  filteredDistricts: District[]
-  handleToggleLight: (lightId: string) => void
-  setSelectedLight: (light: District['lightBulbs'][0] | null) => void;
+  searchTerm: string;
+  setSearchTerm: React.Dispatch<React.SetStateAction<string>>;
+  selectedDistrict: string | null;
+  setSelectedDistrict: React.Dispatch<React.SetStateAction<string | null>>;
+  filteredDistricts: District[];
+  handleToggleLight: (lightId: string) => void;
+  setSelectedLight: React.Dispatch<React.SetStateAction<District['lightBulbs'][0] | null>>;
 }
 
 export const LeftSidebar = ({
-  searchTerm, setSearchTerm, selectedDistrict, setSelectedDistrict,
+  selectedDistrict, setSelectedDistrict,
   filteredDistricts, handleToggleLight, setSelectedLight,
 }: LeftSidebarProps) => {
-
+typeof window === "undefined"
   const handleDistrictSelect = (value: string) => {
     if (value === 'all') {
       setSelectedDistrict(null);
@@ -39,17 +37,6 @@ export const LeftSidebar = ({
       <div className="px-4 py-4 border-b border-gray-200">
         <CardHeader>
           <h3 className="text-lg font-semibold mb-2">Danh sách tủ điều khiển</h3>
-          <div className="relative mb-4">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <Input
-              type="text"
-              placeholder="Tìm kiếm tên đèn..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
-            />
-          </div>
-
           <Select onValueChange={handleDistrictSelect}>
             <SelectTrigger>
               <SelectValue placeholder="Chọn Khu Vực" />
@@ -74,7 +61,7 @@ export const LeftSidebar = ({
                   <div key={light.id} className="flex items-center justify-between py-2">
                     <div className="flex items-center cursor-pointer" onClick={() => handleLightSelect(district.id, light)}>
                       <div
-                        className={`h-2 w-2 rounded-full mr-2 ${!light.isConnected ? 'bg-red-400' : (light.isOn ? 'bg-yellow-400' : 'bg-gray-400')}`} />
+                        className={`h-2 w-2 rounded-full mr-2 ${!light.isConnected ? 'bg-red-400' : (light.isOn ? 'bg-green-400' : 'bg-gray-400')}`} />
                       <span>{light.name}</span>
                     </div>
                   </div>
@@ -86,5 +73,5 @@ export const LeftSidebar = ({
         </CardContent>
       </div>
     </div>
-  )
+  );
 }
