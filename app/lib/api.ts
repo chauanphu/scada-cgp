@@ -23,6 +23,21 @@ export type User = {
   password: string;
 }
 
+// Check if logged in
+export async function checkLogin(token: string): Promise<boolean> {
+  const response = await fetch(`${API_URL}/auth/user/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+
+  return true;
+}
+
 export async function getToken(username: string, password: string): Promise<string> {
   const response = await fetch(`${API_URL}/auth/token`, {
     method: 'POST',
@@ -79,6 +94,21 @@ export async function getUsers(token: string): Promise<User[]> {
   }
   const data = await response.json();
   return data;
+}
+
+export async function roleCheck(token: string): Promise<Role> {
+  const response = await fetch(`${API_URL}/auth/user/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch role');
+  }
+
+  const data = await response.json();
+  return data.role;
 }
 
 export async function createUser(token: string, userData: Partial<User>): Promise<User> {
