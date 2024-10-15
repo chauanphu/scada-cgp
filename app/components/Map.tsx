@@ -98,7 +98,6 @@ export const Map = ({ districts, handleToggleLight, selectedDistrict, selectedLi
             <RightSidebar
                 selectedLight={selectedLight}
                 handleToggleLight={handleToggleLight}
-                selectedDistrict={selectedDistrict}
             />
         </div>
     );
