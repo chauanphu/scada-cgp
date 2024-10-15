@@ -1,14 +1,12 @@
 // app/lib/api.ts
 // Adjusted to ensure API_URL is securely accessed on the server side.
 
-const API_URL = process.env.API_URL;
+import { Cluster, ClusterFull, CreateClusterData } from "@/types/Cluster";
+import { EnergyData } from "@/types/Report";
+import axios from "axios";
 
-type Cluster = {
-  id: number;
-  name: string;
-  url: string;
-  units: Unit[];
-};
+const API_URL = process.env.API_URL;
+const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 enum Role {
   Admin = 1,
@@ -21,6 +19,20 @@ export type User = {
   email: string;
   role: Role;
   password: string;
+}
+
+// Check if logged in
+export async function checkLogin(token: string): Promise<boolean> {
+  const response = await fetch(`${API_URL}/auth/user/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    return false;
+  }
+  return true;
 }
 
 export async function getToken(username: string, password: string): Promise<string> {
@@ -81,6 +93,21 @@ export async function getUsers(token: string): Promise<User[]> {
   return data;
 }
 
+export async function roleCheck(token: string): Promise<Role> {
+  const response = await fetch(`${API_URL}/auth/user/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch role');
+  }
+
+  const data = await response.json();
+  return data.role;
+}
+
 export async function createUser(token: string, userData: Partial<User>): Promise<User> {
   const response = await fetch(`${API_URL}/auth/user`, {
     method: 'POST',
@@ -128,28 +155,6 @@ export async function deleteUser(token: string, userId: number): Promise<void> {
   }
 }
 
-export type Unit = {
-  id: number,
-  name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-}
-
-export type UserShortened = {
-  user_id: number;
-  username: string;
-}
-
-export type ClusterFull = {
-  name: string;
-  id: number;
-  units: Unit[];
-  account: UserShortened;
-  created: string;
-  updated: string;
-};
-
 export async function getFullClusters(token: string): Promise<ClusterFull> {
   // Get token from cookie
   
@@ -166,11 +171,6 @@ export async function getFullClusters(token: string): Promise<ClusterFull> {
   return response.json();
 }
 
-export type CreateClusterData = {
-  name: string;
-  units: Partial<Unit[]>;
-  account_id: number;
-}
 
 // Create a new cluster
 //Body: {name: string, units: Unit[], account_id: number}
@@ -186,6 +186,30 @@ export async function createCluster(token: string, clusterData: CreateClusterDat
 
   if (!response.ok) {
     throw new Error('Failed to create cluster');
+  }
+
+  return response.json();
+}
+
+export enum View {
+  HOURLY = 'hourly',
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+  MONTHLY = 'monthly',
+  QUARTERLY = 'quarterly',
+  YEARLY = 'yearly',
+}
+
+// GET enery data
+export async function getEnergyData(token: string, view: View): Promise<EnergyData[]> {
+  const response = await fetch(`${API_URL}/status/enery?view=${view}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (response.status !== 200) {
+    throw new Error('Failed to fetch energy data');
   }
 
   return response.json();

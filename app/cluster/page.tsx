@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Unit, ClusterFull, UserShortened } from '@/lib/api';
+import { Unit, ClusterFull, UserShortened } from '@/types/Cluster';
 
 const ClusterPage: React.FC = () => {
   const [clusters, setClusters] = useState<ClusterFull[]>([]);
