@@ -29,7 +29,6 @@ export async function checkLogin(token: string): Promise<boolean> {
   if (!response.ok) {
     return false;
   }
-
   return true;
 }
 
