@@ -1,14 +1,9 @@
 // app/lib/api.ts
 // Adjusted to ensure API_URL is securely accessed on the server side.
 
-const API_URL = process.env.API_URL;
+import { Cluster, ClusterFull, CreateClusterData } from "@/types/Cluster";
 
-type Cluster = {
-  id: number;
-  name: string;
-  url: string;
-  units: Unit[];
-};
+const API_URL = process.env.API_URL;
 
 enum Role {
   Admin = 1,
@@ -158,28 +153,6 @@ export async function deleteUser(token: string, userId: number): Promise<void> {
   }
 }
 
-export type Unit = {
-  id: number,
-  name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-}
-
-export type UserShortened = {
-  user_id: number;
-  username: string;
-}
-
-export type ClusterFull = {
-  name: string;
-  id: number;
-  units: Unit[];
-  account: UserShortened;
-  created: string;
-  updated: string;
-};
-
 export async function getFullClusters(token: string): Promise<ClusterFull> {
   // Get token from cookie
   
@@ -196,11 +169,6 @@ export async function getFullClusters(token: string): Promise<ClusterFull> {
   return response.json();
 }
 
-export type CreateClusterData = {
-  name: string;
-  units: Partial<Unit[]>;
-  account_id: number;
-}
 
 // Create a new cluster
 //Body: {name: string, units: Unit[], account_id: number}
