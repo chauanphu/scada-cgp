@@ -2,8 +2,11 @@
 // Adjusted to ensure API_URL is securely accessed on the server side.
 
 import { Cluster, ClusterFull, CreateClusterData } from "@/types/Cluster";
+import { EnergyData } from "@/types/Report";
+import axios from "axios";
 
 const API_URL = process.env.API_URL;
+const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 enum Role {
   Admin = 1,
@@ -183,6 +186,30 @@ export async function createCluster(token: string, clusterData: CreateClusterDat
 
   if (!response.ok) {
     throw new Error('Failed to create cluster');
+  }
+
+  return response.json();
+}
+
+export enum View {
+  HOURLY = 'hourly',
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+  MONTHLY = 'monthly',
+  QUARTERLY = 'quarterly',
+  YEARLY = 'yearly',
+}
+
+// GET enery data
+export async function getEnergyData(token: string, view: View): Promise<EnergyData[]> {
+  const response = await fetch(`${API_URL}/status/enery?view=${view}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (response.status !== 200) {
+    throw new Error('Failed to fetch energy data');
   }
 
   return response.json();
