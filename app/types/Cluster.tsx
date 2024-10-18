@@ -1,9 +1,9 @@
 export type Unit = {
     id: number,
     name: string;
-    address: string;
     latitude: number;
     longitude: number;
+    toggle: boolean;
   }
 
 export type Cluster = {

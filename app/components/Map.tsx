@@ -1,13 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import L, { LatLngExpression } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import Cookies from 'js-cookie';
+import { useEffect, useRef, useState } from "react";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import L, { LatLngExpression } from "leaflet";
+import "leaflet/dist/leaflet.css";
+import Cookies from "js-cookie";
 import iconOn from "@/images/markers/on.png";
 import iconOff from "@/images/markers/off.png";
 import iconDisable from "@/images/markers/disable.png";
-import { Cluster, Unit } from '@/types/Cluster'; 
-import { RightSidebar } from './RightSidebar';
+import { Cluster, Unit } from "@/types/Cluster";
+import { RightSidebar } from "./RightSidebar";
 interface MapProps {
   selectedUnit: Unit | null;
   handleToggleUnit: (unitID: number) => void;
@@ -28,14 +28,20 @@ function GetIcon(iconSize: number, isConnected: boolean, isLightOn: boolean) {
   }
 }
 
-export const Map = ({ selectedUnit, handleToggleUnit, setSelectedUnit }: MapProps) => {
-  const mapRef = useRef(null);
+export const Map = ({
+  selectedUnit,
+  handleToggleUnit,
+  setSelectedUnit,
+}: MapProps) => {
+  const mapRef = useRef<L.Map | null>(null);
   const [clusters, setClusters] = useState<Cluster[]>([]);
-  const [unitStatus, setUnitStatus] = useState<Record<number, { isOn: boolean, isConnected: boolean }>>({});
+  const [unitStatus, setUnitStatus] = useState<
+    Record<number, { isOn: boolean; isConnected: boolean }>
+  >({});
 
   const fetchClusters = async () => {
-    const token = Cookies.get('token');
-    const response = await fetch('/api/clusters/my-clusters', {
+    const token = Cookies.get("token");
+    const response = await fetch("/api/clusters/my-clusters", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -48,31 +54,33 @@ export const Map = ({ selectedUnit, handleToggleUnit, setSelectedUnit }: MapProp
 
   const panToUnit = (unit: Unit) => {
     if (mapRef.current) {
-      const map = mapRef.current;
+      const map = mapRef.current as L.Map;
       map.setView([unit.latitude, unit.longitude - 0.001], 22);
     }
   };
 
   const initializeWebSocket = (unitId: number) => {
-    const ws = new WebSocket(`ws://api.cgp.captechvn.com/ws/unit/${unitId}/status`);
+    const ws = new WebSocket(
+      `ws://api.cgp.captechvn.com/ws/unit/${unitId}/status`
+    );
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
       const isConnected = data.power !== 0;
       const isOn = data.toggle === 1;
 
-      setUnitStatus(prevState => ({
+      setUnitStatus((prevState) => ({
         ...prevState,
         [unitId]: { isOn, isConnected },
       }));
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error("WebSocket error:", error);
     };
 
     ws.onclose = () => {
-      console.log('WebSocket connection closed');
+      console.log("WebSocket connection closed");
     };
 
     return () => {
@@ -102,27 +110,31 @@ export const Map = ({ selectedUnit, handleToggleUnit, setSelectedUnit }: MapProp
         className="h-screen w-full"
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        {clusters.flatMap(cluster =>
-          cluster.units.map(unit => {
-            const status = unitStatus[unit.id] || { isOn: false, isConnected: false };
-            const icon = GetIcon(30, status.isConnected, status.isOn);
-            return (
-              <Marker
-                key={unit.id}
-                position={[unit.latitude, unit.longitude] as LatLngExpression}
-                icon={icon}
-                eventHandlers={{
-                  click: () => setSelectedUnit(unit),
-                }}
-              />
-            );
-          })
-        )}
+        {clusters.length > 0 &&
+          clusters.flatMap((cluster) =>
+            cluster.units.map((unit) => {
+              const status = unitStatus[unit.id] || {
+                isOn: false,
+                isConnected: false,
+              };
+              const icon = GetIcon(30, status.isConnected, status.isOn);
+              return (
+                <Marker
+                  key={unit.id}
+                  position={[unit.latitude, unit.longitude] as LatLngExpression}
+                  icon={icon}
+                  eventHandlers={{
+                    click: () => setSelectedUnit(unit),
+                  }}
+                />
+              );
+            })
+          )}
       </MapContainer>
       <RightSidebar
-                selectedUnit={selectedUnit}
-                handleToggleUnit={handleToggleUnit}
-            />
+        selectedUnit={selectedUnit}
+        handleToggleUnit={handleToggleUnit}
+      />
     </div>
   );
 };

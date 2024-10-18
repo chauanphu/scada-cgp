@@ -23,7 +23,7 @@ export type User = {
 
 // Check if logged in
 export async function checkLogin(token: string): Promise<boolean> {
-  const response = await fetch(`${API_URL}/auth/user/me`, {
+  const response = await fetch(`${API_URL}/auth/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -36,7 +36,7 @@ export async function checkLogin(token: string): Promise<boolean> {
 }
 
 export async function getToken(username: string, password: string): Promise<string> {
-  const response = await fetch(`${API_URL}/auth/token`, {
+  const response = await fetch(`${API_URL}/auth/token/`, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
@@ -80,7 +80,7 @@ export async function getClusters(token: string): Promise<Cluster[]> {
 }
 
 export async function getUsers(token: string): Promise<User[]> {
-  const response = await fetch(`${API_URL}/auth/user`, {
+  const response = await fetch(`${API_URL}/user`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -92,31 +92,8 @@ export async function getUsers(token: string): Promise<User[]> {
   const data = await response.json();
   return data;
 }
-
-export async function roleCheck(token: string): Promise<boolean> {
-  const response = await fetch(`${API_URL}/auth/user/me`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch role');
-  }
-
-  const data = await response.json();
-  return data.role === Role.Admin;  
-}
-
-
 export async function createUser(token: string, userData: Partial<User>): Promise<User> {
-  
-  const isAdmin = await roleCheck(token);  
-  if (!isAdmin) {
-    throw new Error('Access denied: Admin privileges required');
-  }
-
-  const response = await fetch(`${API_URL}/auth/user`, {
+  const response = await fetch(`${API_URL}/user`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -133,12 +110,7 @@ export async function createUser(token: string, userData: Partial<User>): Promis
 }
 
 export async function updateUser(token: string, userId: number, userData: Partial<User>): Promise<User> {
-  const isAdmin = await roleCheck(token);  
-  if (!isAdmin) {
-    throw new Error('Access denied: Admin privileges required');
-  }
-
-  const response = await fetch(`${API_URL}/auth/user/${userId}`, {
+  const response = await fetch(`${API_URL}/user/${userId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -155,12 +127,7 @@ export async function updateUser(token: string, userId: number, userData: Partia
 }
 
 export async function deleteUser(token: string, userId: number): Promise<void> {
-  const isAdmin = await roleCheck(token);  
-  if (!isAdmin) {
-    throw new Error('Access denied: Admin privileges required');
-  }
-
-  const response = await fetch(`${API_URL}/auth/user/${userId}`, {
+  const response = await fetch(`${API_URL}/user/${userId}`, {
     method: 'DELETE',
     headers: {
       Authorization: `Bearer ${token}`,
