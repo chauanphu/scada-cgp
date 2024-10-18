@@ -52,7 +52,6 @@ export function Navbar({ permissions }: { permissions: PermissionEnum[] }) {
         }
 
     ];
-    console.log(tabs)
     return (
         <div className="fixed bg-white left-0 right-0 z-50 flex justify-center align-middle w-full">
             <nav className="w-full">

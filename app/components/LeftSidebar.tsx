@@ -21,8 +21,9 @@ export const LeftSidebar = ({
 }: LeftSidebarProps) => {
   const [unitStatus, setUnitStatus] = useState<Record<number, { isOn: boolean, isConnected: boolean }>>({});
 
-  const handleClusterSelect = (value: number) => {
-    const selected = filteredClusters.find(cluster => cluster.id === value) || null;
+  const handleClusterSelect = (value: string) => {
+    const clusterId = parseInt(value, 10);
+    const selected = filteredClusters.find(cluster => cluster.id === clusterId) || null;
     setSelectedCluster(selected);
   };
 
@@ -94,14 +95,14 @@ export const LeftSidebar = ({
               />
             </div>
           </form>
-          <Select onValueChange={handleClusterSelect} className="w-full">
+          <Select onValueChange={handleClusterSelect}>
             <SelectTrigger>
               <SelectValue placeholder="Chọn Cụm" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={0}>Tất cả</SelectItem>
+              <SelectItem value={"0"}>Tất cả</SelectItem>
               {filteredClusters.map((cluster) => (
-                <SelectItem key={cluster.id} value={cluster.id}>{cluster.name}</SelectItem>
+                <SelectItem key={cluster.id} value={cluster.id.toString()}>{cluster.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
