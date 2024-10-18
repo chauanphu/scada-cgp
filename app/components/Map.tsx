@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Marker } from "react-leaflet";
+import dynamic from "next/dynamic";
 import L, { LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import Cookies from "js-cookie";
@@ -8,6 +8,12 @@ import iconOff from "@/images/markers/off.png";
 import iconDisable from "@/images/markers/disable.png";
 import { Cluster, Unit } from "@/types/Cluster";
 import { RightSidebar } from "./RightSidebar";
+
+// Dynamically import react-leaflet components to avoid SSR issues
+const MapContainer = dynamic(() => import("react-leaflet").then(mod => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import("react-leaflet").then(mod => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import("react-leaflet").then(mod => mod.Marker), { ssr: false });
+
 interface MapProps {
   selectedUnit: Unit | null;
   handleToggleUnit: (unitID: number) => void;
@@ -97,7 +103,10 @@ export const Map = ({
   useEffect(() => {
     if (selectedUnit) {
       panToUnit(selectedUnit);
-      initializeWebSocket(selectedUnit.id);
+      const cleanup = initializeWebSocket(selectedUnit.id);
+      return () => {
+        if (cleanup) cleanup();
+      };
     }
   }, [selectedUnit]);
 
