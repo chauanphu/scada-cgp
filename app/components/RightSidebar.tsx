@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { District } from '@/types/lightTypes';
 import { Button } from './ui/button';
+import { Cluster } from '@/types/Cluster';
 
 interface RightSidebarProps {
-  selectedLight: District['lightBulbs'][0] | null;
-  handleToggleLight: (lightId: string) => void;
+  selectedUnit: Cluster['units'][0] | null;
+  handleToggleUnit: (unitId: number) => void;
 }
 
-export const RightSidebar = ({ selectedLight, handleToggleLight }: RightSidebarProps) => {
+export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarProps) => {
   const [isOn, setIsOn] = useState<boolean>(false);
   const [power, setPower] = useState<number>(0);
   const [current, setCurrent] = useState<number>(0);
@@ -18,9 +18,9 @@ export const RightSidebar = ({ selectedLight, handleToggleLight }: RightSidebarP
   useEffect(() => {
     let ws: WebSocket | null = null;
 
-    if (selectedLight) {
+    if (selectedUnit) {
       // Establish WebSocket connection
-      const wsUrl = `ws://api.cgp.captechvn.com/ws/unit/${selectedLight.id}/status`;
+      const wsUrl = `ws://api.cgp.captechvn.com/ws/unit/${selectedUnit.id}/status`;
       ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
@@ -56,22 +56,22 @@ export const RightSidebar = ({ selectedLight, handleToggleLight }: RightSidebarP
         ws.close();
       }
     };
-  }, [selectedLight]);
+  }, [selectedUnit]);
 
   const toggleLight = () => {
-    if (selectedLight) {
-      handleToggleLight(selectedLight.id);
+    if (selectedUnit) {
+      handleToggleUnit(selectedUnit.id);
       setIsOn((prevState) => !prevState);  
     }
   };
 
-  if (!selectedLight) {
-    return <div className="w-1/4 p-10 text-lg mt-1 text-gray-600">No light selected</div>;
+  if (!selectedUnit) {
+    return <div className="w-1/4 p-10 pt-[6rem] text-lg mt-1 text-gray-600">No light selected</div>;
   }
 
   return (
-    <div className="w-1/4 p-8 h-full">
-      <h3 className="text-lg font-semibold mb-4">Thông tin - {selectedLight.name}</h3>
+    <div className="w-1/4 p-8 pt-[6rem] h-full">
+      <h3 className="text-lg font-semibold mb-4">Thông tin - {selectedUnit.name}</h3>
 
       <div className="bg-white p-6 rounded-lg shadow space-y-4">
         <p className="text-lg font-semibold">
@@ -89,14 +89,15 @@ export const RightSidebar = ({ selectedLight, handleToggleLight }: RightSidebarP
           <span className="font-normal ml-2">{current} A</span>
         </p>
 
-        <p className="text-lg font-semibold">
+        {/* awating fix or add another kind of structure
+         <p className="text-lg font-semibold">
           Thời gian mở: 
-          <span className="font-normal ml-2">{selectedLight.schedule.on}</span>
+          <span className="font-normal ml-2">{selectedUnit.schedule.on}</span>
         </p>
         <p className="text-lg font-semibold">
           Thời gian tắt: 
-          <span className="font-normal ml-2">{selectedLight.schedule.off}</span>
-        </p>
+          <span className="font-normal ml-2">{selectedUnit.schedule.off}</span>
+        </p> */}
 
         <p className="text-lg font-semibold">
           Trạng thái: 
@@ -106,17 +107,18 @@ export const RightSidebar = ({ selectedLight, handleToggleLight }: RightSidebarP
         </p>
       </div>
 
-      <div className="mt-6">
+      {/* Awaiting for toggle Unit
+       <div className="mt-6">
         <Button
           variant={isOn ? "default" : "outline"}
           size="sm"
           onClick={toggleLight}
-          disabled={!selectedLight.isConnected}  
-          className={`w-full ${!selectedLight.isConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+          disabled={!selectedUnit.isConnected}  
+          className={`w-full ${!selectedUnit.isConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          {selectedLight.isConnected ? (isOn ? 'Nhấn để Tắt' : 'Nhấn để Mở') : 'Mất kết nối'}
+          {selectedUnit.isConnected ? (isOn ? 'Nhấn để Tắt' : 'Nhấn để Mở') : 'Mất kết nối'}
         </Button>
-      </div>
+      </div> */}
     </div>
   );
 };

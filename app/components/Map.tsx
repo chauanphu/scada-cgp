@@ -1,106 +1,128 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { District } from '../types/lightTypes';
-import iconOn from '@/images/markers/on.png';
-import iconOff from '@/images/markers/off.png';
-import iconDisable from '@/images/markers/disable.png';
+import Cookies from 'js-cookie';
+import iconOn from "@/images/markers/on.png";
+import iconOff from "@/images/markers/off.png";
+import iconDisable from "@/images/markers/disable.png";
+import { Cluster, Unit } from '@/types/Cluster'; 
 import { RightSidebar } from './RightSidebar';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { Codesandbox } from 'lucide-react';
 interface MapProps {
-    districts: District[];
-    selectedLight: District['lightBulbs'][0] | null;
-    selectedDistrict: District;
-    handleToggleLight: (lightId: string) => void;
-    setSelectedLight: (light: District['lightBulbs'][0] | null) => void;
+  selectedUnit: Unit | null;
+  handleToggleUnit: (unitID: number) => void;
+  setSelectedUnit: (unit: Unit | null) => void;
 }
 
-function GetIcon(iconSize: number, isConnected: boolean, isLightOn: boolean, isControlHouse = false) {
-    const size: [number, number] = [iconSize, iconSize];
+function GetIcon(iconSize: number, isConnected: boolean, isLightOn: boolean) {
+  const size: [number, number] = [iconSize, iconSize];
 
-    if (isControlHouse) {
-        const svgString = renderToStaticMarkup(<Codesandbox size={iconSize} color="blue" />);
-        const iconUrl = `data:image/svg+xml;base64,${btoa(svgString)}`;
-
-        return L.icon({ iconUrl, iconSize: size });
-    }
-
-    if (isConnected) {
-        if (isLightOn) {
-            return L.icon({ iconUrl: iconOn.src, iconSize: size });
-        } else {
-            return L.icon({ iconUrl: iconOff.src, iconSize: size });
-        }
+  if (isConnected) {
+    if (isLightOn) {
+      return L.icon({ iconUrl: iconOn.src, iconSize: size });
     } else {
-        return L.icon({ iconUrl: iconDisable.src, iconSize: size });
+      return L.icon({ iconUrl: iconOff.src, iconSize: size });
     }
+  } else {
+    return L.icon({ iconUrl: iconDisable.src, iconSize: size });
+  }
 }
 
-export const Map = ({ districts, handleToggleLight, selectedDistrict, selectedLight, setSelectedLight }: MapProps) => {
-    const mapRef = useRef(null);
+export const Map = ({ selectedUnit, handleToggleUnit, setSelectedUnit }: MapProps) => {
+  const mapRef = useRef(null);
+  const [clusters, setClusters] = useState<Cluster[]>([]);
+  const [unitStatus, setUnitStatus] = useState<Record<number, { isOn: boolean, isConnected: boolean }>>({});
 
-    const panToLight = (light: District['lightBulbs'][0]) => {
-        if (mapRef.current) {
-            const map = mapRef.current;
-            map.setView([light.lat, light.lng - 0.001], 22);
-        }
+  const fetchClusters = async () => {
+    const token = Cookies.get('token');
+    const response = await fetch('/api/clusters/my-clusters', {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const data = await response.json();
+    setClusters(data);
+  };
+
+  const panToUnit = (unit: Unit) => {
+    if (mapRef.current) {
+      const map = mapRef.current;
+      map.setView([unit.latitude, unit.longitude - 0.001], 22);
+    }
+  };
+
+  const initializeWebSocket = (unitId: number) => {
+    const ws = new WebSocket(`ws://api.cgp.captechvn.com/ws/unit/${unitId}/status`);
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const isConnected = data.power !== 0;
+      const isOn = data.toggle === 1;
+
+      setUnitStatus(prevState => ({
+        ...prevState,
+        [unitId]: { isOn, isConnected },
+      }));
     };
 
-    useEffect(() => {
-        if (selectedLight) {
-            panToLight(selectedLight);
-        }
-    }, [selectedLight]);
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
 
-    return (
-        <div className="flex">
-            <MapContainer
-                ref={mapRef}
-                center={[10.8231, 106.6297] as LatLngExpression}
-                zoom={22}
-                className='h-screen w-full'
-            >
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                {districts.flatMap((district) =>
-                    district.lightBulbs.map((light) => (
-                        <Marker
-                            key={light.id}
-                            position={[light.lat, light.lng] as LatLngExpression}
-                            eventHandlers={{
-                                click: () => {
-                                    setSelectedLight(light);
-                                },
-                            }}
-                            icon={GetIcon(30, light.isConnected, light.isOn)}
-                        />
-                    ))
-                )}
+    ws.onclose = () => {
+      console.log('WebSocket connection closed');
+    };
 
-                {districts.map(district => (
-                    <>
-                        <Marker
-                            key={district.id}
-                            position={[district.lat, district.lng] as LatLngExpression}
-                            eventHandlers={{
-                                click: () => {
-                                    // setSelectedLight(light); 
-                                },
-                            }}
-                            icon={GetIcon(40, true, true, true)}
-                        />
-                    </>
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  };
 
-                ))}
+  useEffect(() => {
+    fetchClusters();
+  }, []);
 
-            </MapContainer>
-            <RightSidebar
-                selectedLight={selectedLight}
-                handleToggleLight={handleToggleLight}
+  useEffect(() => {
+    if (selectedUnit) {
+      panToUnit(selectedUnit);
+      initializeWebSocket(selectedUnit.id);
+    }
+  }, [selectedUnit]);
+
+  return (
+    <div className="flex">
+      <MapContainer
+        ref={mapRef}
+        center={[10.8231, 106.6297] as LatLngExpression}
+        zoom={22}
+        className="h-screen w-full"
+      >
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        {clusters.flatMap(cluster =>
+          cluster.units.map(unit => {
+            const status = unitStatus[unit.id] || { isOn: false, isConnected: false };
+            const icon = GetIcon(30, status.isConnected, status.isOn);
+            return (
+              <Marker
+                key={unit.id}
+                position={[unit.latitude, unit.longitude] as LatLngExpression}
+                icon={icon}
+                eventHandlers={{
+                  click: () => setSelectedUnit(unit),
+                }}
+              />
+            );
+          })
+        )}
+      </MapContainer>
+      <RightSidebar
+                selectedUnit={selectedUnit}
+                handleToggleUnit={handleToggleUnit}
             />
-        </div>
-    );
+    </div>
+  );
 };
-
-export default Map;

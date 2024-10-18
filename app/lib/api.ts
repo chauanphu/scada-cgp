@@ -5,7 +5,7 @@ import { Cluster, ClusterFull, CreateClusterData } from "@/types/Cluster";
 import { EnergyData } from "@/types/Report";
 import axios from "axios";
 
-const API_URL = process.env.API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 enum Role {
