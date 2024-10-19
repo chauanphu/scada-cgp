@@ -47,7 +47,7 @@ export const Map = ({
 
   const fetchClusters = async () => {
     const token = Cookies.get("token");
-    const response = await fetch("/api/clusters/my-clusters", {
+    const response = await fetch("/api/clusters/", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

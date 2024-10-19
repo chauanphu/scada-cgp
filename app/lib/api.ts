@@ -220,3 +220,70 @@ export async function getRoles(token: string): Promise<Role[]> {
 
   return response.json();
 }
+
+// Get audit logs
+export type AuditLog = {
+  timestamp: string;
+  action: string;
+  email: string;
+  details: string;
+};
+
+export type PaginatedAuditLogs = {
+  total: number;
+  page: number;
+  page_size: number;
+  items: AuditLog[];
+};
+
+export async function getAuditLogs(token: string, page: number = 1, page_size: number = 10): Promise<PaginatedAuditLogs> {
+  try {
+    const response = await fetch(`${NEXT_PUBLIC_API_URL}/audit/?page=${page}&page_size=${page_size}`, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch audit logs');
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error fetching audit logs:', error);
+    throw error;
+  }
+}
+
+export async function downloadCSVAudit(token: string): Promise<void> {
+  try {
+    const response = await fetch(`${NEXT_PUBLIC_API_URL}/audit/auditlogs.csv`, {
+      method: 'GET',
+      headers: {
+        'accept': 'text/csv',
+        'Content-Type': 'text/csv',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to download CSV audit logs');
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'auditlogs.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Error downloading CSV audit logs:', error);
+    throw error;
+  }
+}
