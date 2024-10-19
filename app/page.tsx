@@ -5,6 +5,7 @@ import { Map } from '@/components/Map';
 import { Cluster } from '@/types/Cluster'; // Update the imports
 import Cookies from 'js-cookie';
 import { Navbar, PermissionEnum } from './components/NavBar';
+import { NEXT_PUBLIC_API_URL } from '@/lib/api';
 
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,7 +22,7 @@ export default function HomePage() {
 
   const fetchClusters = async () => {
       const token = Cookies.get('token');
-      const response = await fetch('http://localhost:8000/api/clusters/my-clusters', {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/clusters/my-clusters`, {
           method: "GET",
           headers: {
               "Content-Type": "application/json",

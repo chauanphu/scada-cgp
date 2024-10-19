@@ -6,11 +6,11 @@ import { EnergyData } from "@/types/Report";
 import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-enum Role {
-  Admin = 1,
-  User = 2
+export type Role = {
+  role_id: number;
+  role_name: string;
 }
 
 export type User = {
@@ -126,17 +126,20 @@ export async function updateUser(token: string, userId: number, userData: Partia
   return response.json();
 }
 
-export async function deleteUser(token: string, userId: number): Promise<void> {
+export async function deleteUser(token: string, userId: number): Promise<User> {
   const response = await fetch(`${API_URL}/user/${userId}`, {
     method: 'DELETE',
     headers: {
-      Authorization: `Bearer ${token}`,
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     },
   });
 
   if (!response.ok) {
     throw new Error('Failed to delete user');
   }
+  return response.json();
 }
 
 export async function getFullClusters(token: string): Promise<ClusterFull> {
@@ -194,6 +197,23 @@ export async function getEnergyData(token: string, view: View): Promise<EnergyDa
   });
   if (response.status !== 200) {
     throw new Error('Failed to fetch energy data');
+  }
+
+  return response.json();
+}
+
+export async function getRoles(token: string): Promise<Role[]> {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/user/role/`, {
+    method: 'GET',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch roles');
   }
 
   return response.json();

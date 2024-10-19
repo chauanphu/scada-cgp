@@ -1,23 +1,29 @@
-// app/user/page.tsx
-
 "use client";
 
 import { useEffect, useState, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
+import { deleteUser, getRoles, Role } from "@/lib/api";
+import Cookies from 'js-cookie';
 
 // Type for User as received from the server
 type User = {
   user_id: number;
   username: string;
   email: string;
-  role: number;
+  role: {
+    role_id: number;
+    role_name: string;
+  };
 };
 
 // Type for the user creation form, including confirmPassword
 type CreateUserForm = {
   username: string;
   email: string;
-  role: number;
+  role: {
+    role_id: number;
+    role_name: string;
+  } | null;
   password: string;
   confirmPassword: string;
 };
@@ -26,16 +32,20 @@ type CreateUserForm = {
 type CreateUserRequest = {
   username: string;
   email: string;
-  role: number;
+  role: {
+    role_id: number;
+    role_name: string;
+  };
   password: string;
 };
 
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [newUser, setNewUser] = useState<CreateUserForm>({
     username: "",
     email: "",
-    role: 2,
+    role: null,
     password: "",
     confirmPassword: "",
   });
@@ -46,6 +56,7 @@ export default function UserManagement() {
 
   useEffect(() => {
     fetchUsers();
+    fetchRoles();
   }, []);
 
   // Fetch all users
@@ -76,6 +87,23 @@ export default function UserManagement() {
     }
   };
 
+  // Fetch all roles
+  const fetchRoles = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      // Get token from cookies
+      const token = Cookies.get('token') || '';
+      const rolesData = await getRoles(token);
+      setRoles(rolesData);
+    } catch (err: any) {
+      console.error(err);
+      setError("Failed to fetch roles.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle creating a new user
   const handleCreateUser = async () => {
     // Client-side Validation
@@ -86,6 +114,7 @@ export default function UserManagement() {
       !newUser.password ||
       !newUser.confirmPassword
     ) {
+      console.log(newUser)
       setError("Please fill out all fields.");
       return;
     }
@@ -123,7 +152,7 @@ export default function UserManagement() {
       setNewUser({
         username: "",
         email: "",
-        role: 2,
+        role: null,
         password: "",
         confirmPassword: "",
       });
@@ -182,19 +211,8 @@ export default function UserManagement() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`/api/user/${userId}`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Ensures cookies are sent
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete user");
-      }
-
+      const token = Cookies.get('token') || '';
+      const response = await deleteUser(token, userId);
       setUsers(users.filter((user) => user.user_id !== userId));
     } catch (err: any) {
       console.error(err);
@@ -296,15 +314,19 @@ export default function UserManagement() {
                         </label>
                         <select
                           id="role"
-                          value={newUser.role}
+                          value={newUser.role?.role_id}
                           onChange={(e) =>
-                            setNewUser({ ...newUser, role: Number(e.target.value) })
+                            setNewUser({ ...newUser, role: {
+                              role_id: Number(e.target.value),
+                              role_name: roles.find((role) => role.role_id === Number(e.target.value))?.role_name || ""
+                            } })
                           }
                           className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                           required
                         >
-                          <option value={1}>Admin</option>
-                          <option value={2}>User</option>
+                          {roles.map((role) => (
+                            <option key={role.role_id} value={role.role_id}>{role.role_name}</option>
+                          ))}
                         </select>
                       </div>
 
@@ -425,23 +447,23 @@ export default function UserManagement() {
                 <td className="border p-2">
                   {editingUser?.user_id === user.user_id ? (
                     <select
-                      value={editingUser?.role || 2}
+                      value={editingUser?.role.role_id}
                       onChange={(e) =>
-                        setEditingUser({
+                        setEditingUser({  
                           ...editingUser!,
-                          role: Number(e.target.value),
+                          role: {
+                            role_id: Number(e.target.value),
+                            role_name: roles.find((role) => role.role_id === Number(e.target.value))?.role_name || ""
+                          }
                         })
                       }
                       className="shadow appearance-none border rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     >
-                      <option value={1}>Admin</option>
-                      <option value={2}>User</option>
+                      {roles.map((role) => (
+                        <option key={role.role_id} value={role.role_id}>{role.role_name}</option>
+                      ))}
                     </select>
-                  ) : user.role === 1 ? (
-                    "Admin"
-                  ) : (
-                    "User"
-                  )}
+                  ) : user.role.role_name}
                 </td>
 
                 {/* Actions */}
