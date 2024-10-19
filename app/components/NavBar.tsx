@@ -29,14 +29,15 @@ export function Navbar({ permissions }: { permissions: PermissionEnum[] }) {
             name: 'Người dùng',
             url: '/user',
             icon: <User className="h-5 w-5" />,
-            // isAccessible: permissions.includes(PermissionEnum.MANAGE_USER),
-            isAccessible: true
+            isAccessible: permissions.includes(PermissionEnum.MANAGE_USER) || permissions.includes(PermissionEnum.MONITOR_SYSTEM),
         },
         {
             name: 'Thiết bị',
             url: '/cluster',
             icon: <Box className="h-5 w-5" />,
-            isAccessible: permissions.includes(PermissionEnum.CONFIG_DEVICE),
+            isAccessible: permissions.includes(
+                PermissionEnum.MONITOR_SYSTEM || PermissionEnum.CONTROL_DEVICE || PermissionEnum.CONFIG_DEVICE,
+            ),
         },
         {
             name: 'Báo cáo',
