@@ -2,10 +2,10 @@
 
 import { useEffect, useState, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { deleteUser, getRoles, Role } from "@/lib/api";
+import { deleteUser, getRoles, Role, updateUser } from "@/lib/api";
 import Cookies from 'js-cookie';
 
-// Type for User as received from the server
+// Kiểu dữ liệu cho User nhận từ máy chủ
 type User = {
   user_id: number;
   username: string;
@@ -16,7 +16,7 @@ type User = {
   };
 };
 
-// Type for the user creation form, including confirmPassword
+// Kiểu dữ liệu cho biểu mẫu tạo người dùng, bao gồm confirmPassword
 type CreateUserForm = {
   username: string;
   email: string;
@@ -28,7 +28,7 @@ type CreateUserForm = {
   confirmPassword: string;
 };
 
-// Type for the user creation request sent to the server
+// Kiểu dữ liệu cho yêu cầu tạo người dùng gửi đến máy chủ
 type CreateUserRequest = {
   username: string;
   email: string;
@@ -59,7 +59,7 @@ export default function UserManagement() {
     fetchRoles();
   }, []);
 
-  // Fetch all users
+  // Lấy tất cả người dùng
   const fetchUsers = async () => {
     setLoading(true);
     setError("");
@@ -69,12 +69,12 @@ export default function UserManagement() {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Ensures cookies are sent
+        credentials: "include", // Đảm bảo cookie được gửi đi
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Failed to fetch users");
+        throw new Error(data.error || "Không lấy được người dùng");
       }
 
       const data: User[] = await response.json();
@@ -87,26 +87,26 @@ export default function UserManagement() {
     }
   };
 
-  // Fetch all roles
+  // Lấy tất cả vai trò
   const fetchRoles = async () => {
     setLoading(true);
     setError("");
     try {
-      // Get token from cookies
+      // Lấy token từ cookie
       const token = Cookies.get('token') || '';
       const rolesData = await getRoles(token);
       setRoles(rolesData);
     } catch (err: any) {
       console.error(err);
-      setError("Failed to fetch roles.");
+      setError("Không lấy được vai trò.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle creating a new user
+  // Xử lý tạo người dùng mới
   const handleCreateUser = async () => {
-    // Client-side Validation
+    // Kiểm tra hợp lệ phía khách hàng
     if (
       !newUser.username ||
       !newUser.email ||
@@ -115,21 +115,21 @@ export default function UserManagement() {
       !newUser.confirmPassword
     ) {
       console.log(newUser)
-      setError("Please fill out all fields.");
+      setError("Vui lòng điền đầy đủ các trường.");
       return;
     }
 
     if (newUser.password !== newUser.confirmPassword) {
-      setError("Passwords do not match.");
+      setError("Mật khẩu không khớp.");
       return;
     }
 
-    // Optionally, add more validation (e.g., email format, password strength)
+    // Tùy chọn, thêm kiểm tra hợp lệ khác (ví dụ: định dạng email, độ mạnh mật khẩu)
 
     setLoading(true);
     setError("");
     try {
-      // Prepare the payload by excluding confirmPassword
+      // Chuẩn bị payload bằng cách loại bỏ confirmPassword
       const { username, email, role, password } = newUser;
       const payload: CreateUserRequest = { username, email, role, password };
 
@@ -138,13 +138,13 @@ export default function UserManagement() {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Ensures cookies are sent
+        credentials: "include", // Đảm bảo cookie được gửi đi
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || "Failed to create user");
+        throw new Error(data.error || "Không tạo được người dùng");
       }
 
       const createdUser: User = await response.json();
@@ -156,7 +156,7 @@ export default function UserManagement() {
         password: "",
         confirmPassword: "",
       });
-      setIsModalOpen(false); // Close the modal upon success
+      setIsModalOpen(false); // Đóng modal khi thành công
     } catch (err: any) {
       console.error(err);
       setError(err.message);
@@ -165,33 +165,20 @@ export default function UserManagement() {
     }
   };
 
-  // Handle updating a user
+  // Xử lý cập nhật người dùng
   const handleUpdateUser = async () => {
     if (!editingUser) return;
 
     if (!editingUser.username || !editingUser.email || !editingUser.role) {
-      setError("Please fill out all fields for the user.");
+      setError("Vui lòng điền đầy đủ các trường cho người dùng.");
       return;
     }
 
     setLoading(true);
     setError("");
     try {
-      const response = await fetch(`/api/user/${editingUser.user_id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Ensures cookies are sent
-        body: JSON.stringify(editingUser),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to update user");
-      }
-
-      const updatedUser: User = await response.json();
+      const token = Cookies.get('token') || '';
+      const updatedUser = await updateUser(token, editingUser.user_id, editingUser);
       setUsers(
         users.map((user) => (user.user_id === updatedUser.user_id ? updatedUser : user))
       );
@@ -204,15 +191,15 @@ export default function UserManagement() {
     }
   };
 
-  // Handle deleting a user
+  // Xử lý xóa người dùng
   const handleDeleteUser = async (userId: number) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+    if (!confirm("Bạn có chắc chắn muốn xóa người dùng này?")) return;
 
     setLoading(true);
     setError("");
     try {
       const token = Cookies.get('token') || '';
-      const response = await deleteUser(token, userId);
+      await deleteUser(token, userId);
       setUsers(users.filter((user) => user.user_id !== userId));
     } catch (err: any) {
       console.error(err);
@@ -224,19 +211,19 @@ export default function UserManagement() {
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl mb-4">User Management</h1>
+      <h1 className="text-2xl mb-4">Quản Lý Người Dùng</h1>
 
       {error && <div className="text-red-500 mb-4">{error}</div>}
 
-      {/* Create New User Button */}
+      {/* Nút Tạo Người Dùng Mới */}
       <button
         onClick={() => setIsModalOpen(true)}
         className="bg-green-500 text-white px-4 py-2 rounded mb-4"
       >
-        Create New User
+        Tạo Người Dùng Mới
       </button>
 
-      {/* User Creation Modal */}
+      {/* Modal Tạo Người Dùng */}
       <Transition appear show={isModalOpen} as={Fragment}>
         <Dialog as="div" className="relative z-10" onClose={() => setIsModalOpen(false)}>
           <Transition.Child
@@ -264,7 +251,7 @@ export default function UserManagement() {
               >
                 <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
                   <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
-                    Create New User
+                    Tạo Người Dùng Mới
                   </Dialog.Title>
                   <div className="mt-4">
                     <form
@@ -273,10 +260,10 @@ export default function UserManagement() {
                         handleCreateUser();
                       }}
                     >
-                      {/* Username */}
+                      {/* Tên Người Dùng */}
                       <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="username">
-                          Username
+                          Tên Người Dùng
                         </label>
                         <input
                           type="text"
@@ -307,10 +294,10 @@ export default function UserManagement() {
                         />
                       </div>
 
-                      {/* Role */}
+                      {/* Vai Trò */}
                       <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="role">
-                          Role
+                          Vai Trò
                         </label>
                         <select
                           id="role"
@@ -330,10 +317,10 @@ export default function UserManagement() {
                         </select>
                       </div>
 
-                      {/* Password */}
+                      {/* Mật Khẩu */}
                       <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-                          Password
+                          Mật Khẩu
                         </label>
                         <input
                           type="password"
@@ -347,10 +334,10 @@ export default function UserManagement() {
                         />
                       </div>
 
-                      {/* Confirm Password */}
+                      {/* Xác Nhận Mật Khẩu */}
                       <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="confirmPassword">
-                          Confirm Password
+                          Xác Nhận Mật Khẩu
                         </label>
                         <input
                           type="password"
@@ -364,7 +351,7 @@ export default function UserManagement() {
                         />
                       </div>
 
-                      {/* Submit Button */}
+                      {/* Nút Gửi */}
                       <div className="flex justify-end">
                         <button
                           type="button"
@@ -372,14 +359,14 @@ export default function UserManagement() {
                           className="bg-gray-500 text-white px-4 py-2 rounded mr-2 hover:bg-gray-600"
                           disabled={loading}
                         >
-                          Cancel
+                          Hủy
                         </button>
                         <button
                           type="submit"
                           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                           disabled={loading}
                         >
-                          {loading ? "Creating..." : "Create"}
+                          {loading ? "Đang tạo..." : "Tạo"}
                         </button>
                       </div>
                     </form>
@@ -391,21 +378,21 @@ export default function UserManagement() {
         </Dialog>
       </Transition>
 
-      {/* User Table */}
+      {/* Bảng Người Dùng */}
       <div className="overflow-x-auto">
         <table className="min-w-full border">
           <thead>
             <tr>
-              <th className="border p-2">Username</th>
+              <th className="border p-2">Tên Người Dùng</th>
               <th className="border p-2">Email</th>
-              <th className="border p-2">Role</th>
-              <th className="border p-2">Actions</th>
+              <th className="border p-2">Vai Trò</th>
+              <th className="border p-2">Hành Động</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
               <tr key={user.user_id} className="hover:bg-gray-100">
-                {/* Username */}
+                {/* Tên Người Dùng */}
                 <td className="border p-2">
                   {editingUser?.user_id === user.user_id ? (
                     <input
@@ -443,7 +430,7 @@ export default function UserManagement() {
                   )}
                 </td>
 
-                {/* Role */}
+                {/* Vai Trò */}
                 <td className="border p-2">
                   {editingUser?.user_id === user.user_id ? (
                     <select
@@ -466,7 +453,7 @@ export default function UserManagement() {
                   ) : user.role.role_name}
                 </td>
 
-                {/* Actions */}
+                {/* Hành Động */}
                 <td className="border p-2">
                   {editingUser?.user_id === user.user_id ? (
                     <>
@@ -475,14 +462,14 @@ export default function UserManagement() {
                         className="bg-green-500 text-white px-2 py-1 rounded mr-2 hover:bg-green-600"
                         disabled={loading}
                       >
-                        {loading ? "Saving..." : "Save"}
+                        {loading ? "Đang lưu..." : "Lưu"}
                       </button>
                       <button
                         onClick={() => setEditingUser(null)}
                         className="bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600"
                         disabled={loading}
                       >
-                        Cancel
+                        Hủy
                       </button>
                     </>
                   ) : (
@@ -491,13 +478,13 @@ export default function UserManagement() {
                         onClick={() => setEditingUser(user)}
                         className="bg-yellow-500 text-white px-2 py-1 rounded mr-2 hover:bg-yellow-600"
                       >
-                        Edit
+                        Sửa
                       </button>
                       <button
                         onClick={() => handleDeleteUser(user.user_id)}
                         className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
                       >
-                        Delete
+                        Xóa
                       </button>
                     </>
                   )}
@@ -507,7 +494,7 @@ export default function UserManagement() {
           </tbody>
         </table>
 
-        {loading && <div className="mt-4">Loading...</div>}
+        {loading && <div className="mt-4">Đang tải...</div>}
       </div>
     </div>
   );
