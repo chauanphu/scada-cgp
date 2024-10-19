@@ -65,8 +65,10 @@ export async function getToken(username: string, password: string): Promise<stri
 }
 
 export async function getClusters(token: string): Promise<Cluster[]> {
-  const response = await fetch(`${API_URL}/clusters/my-clusters`, {
+  const response = await fetch(`${API_URL}/clusters/`, {
     headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
   });

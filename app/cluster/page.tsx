@@ -1,109 +1,109 @@
-// app/pages/cluster.page.tsx
-
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Unit, ClusterFull, UserShortened } from '@/types/Cluster';
+import React, { useState, useEffect } from "react";
+import { Unit, Cluster } from "@/types/Cluster";
+import { NEXT_PUBLIC_API_URL, getClusters } from "@/lib/api";
+import Cookies from "js-cookie";
+
+type CreateClusterForm = {
+  id: number | null;
+  name?: string;
+  units?: Unit[];
+};
 
 const ClusterPage: React.FC = () => {
-  const [clusters, setClusters] = useState<ClusterFull[]>([]);
-  const [selectedCluster, setSelectedCluster] = useState<ClusterFull | null>(null);
-  const [users, setUsers] = useState<UserShortened[]>([]);
+  const [clusters, setClusters] = useState<Cluster[]>([]);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editMode, setEditMode] = useState<boolean>(false);
-  const [newCluster, setNewCluster] = useState<{ id?: number; name: string; units: Unit[]; assignedUsers: number[] }>({
-    name: '',
-    units: [{ id: 0, name: '', address: '', latitude: 0, longitude: 0 }],
-    assignedUsers: [],
+  const [newCluster, setNewCluster] = useState<CreateClusterForm>({
+    id: null,
+    name: "",
+    units: [{ id: 0, name: "", address: "" }],
   });
+  const [originalCluster, setOriginalCluster] = useState<Cluster | null>(null);
 
   useEffect(() => {
-    const fetchClusters = async () => {
-      try {
-        const response = await fetch('/api/cluster?full=true');
-        if (!response.ok) {
-          throw new Error('Error fetching clusters');
-        }
-        const data = await response.json();
-        setClusters(data);
-      } catch (error) {
-        console.error('Error fetching clusters:', error);
-      }
-    };
-    fetchClusters();
+    const token = Cookies.get("token") || "";
+    getClusters(token).then((data) => setClusters(data));
   }, []);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch('/api/user');
-        if (!response.ok) {
-          throw new Error('Error fetching users');
-        }
-        const data = await response.json();
-        setUsers(data);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      }
-    };
-    fetchUsers();
-  }, []);
-
-  const handleOpenModal = (cluster?: ClusterFull) => {
+  const handleOpenModal = (cluster?: Cluster) => {
     if (cluster) {
       setEditMode(true);
       setNewCluster({
         id: cluster.id,
         name: cluster.name,
         units: cluster.units,
-        assignedUsers: cluster.account ? [cluster.account.user_id] : [],
       });
+      setOriginalCluster(cluster);
     } else {
       setEditMode(false);
-      setNewCluster({ name: '', units: [{ id: 0, name: '', address: '', latitude: 0, longitude: 0 }], assignedUsers: [] });
+      setNewCluster({ id: null, name: "", units: [{ id: 0, name: "", address: "" }] });
+      setOriginalCluster(null);
     }
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setNewCluster({ name: '', units: [{ id: 0, name: '', address: '', latitude: 0, longitude: 0 }], assignedUsers: [] });
+    setNewCluster({ id: null, name: "", units: [{ id: 0, name: "", address: "" }] });
+    setOriginalCluster(null);
   };
 
   const handleSaveCluster = async () => {
     try {
-      const response = await fetch(`/api/cluster${editMode ? `/${newCluster.id}` : ''}`, {
-        method: editMode ? 'PATCH' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newCluster),
-      });
+      if (!newCluster) {
+        throw new Error("Thiếu dữ liệu cụm");
+      }
+      const partialUpdate: CreateClusterForm = {};
+
+      // Check for changes in name
+      if (originalCluster?.name !== newCluster.name) {
+        partialUpdate.name = newCluster.name;
+      }
+
+      // Check for changes in units
+      if (originalCluster?.units !== newCluster.units) {
+        partialUpdate.units = newCluster.units;
+      }
+
+      // Send partial update if in edit mode
+      const response = await fetch(
+        `${NEXT_PUBLIC_API_URL}/clusters${editMode ? `/${newCluster.id}` : ""}`,
+        {
+          method: editMode ? "PATCH" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(editMode ? partialUpdate : newCluster),
+        }
+      );
       if (!response.ok) {
-        throw new Error('Error saving cluster');
+        throw new Error("Lỗi khi lưu cụm");
       }
       const data = await response.json();
       if (editMode) {
-        setClusters(clusters.map(cluster => (cluster.id === data.id ? data : cluster)));
+        setClusters(
+          clusters.map((cluster) => (cluster.id === data.id ? data : cluster))
+        );
       } else {
         setClusters([...clusters, data]);
       }
       handleCloseModal();
     } catch (error) {
-      console.error('Error saving cluster:', error);
+      console.error("Lỗi khi lưu cụm:", error);
     }
   };
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Cluster Management</h1>
+      <h1 className="text-2xl font-bold mb-4">Quản lý cụm</h1>
       <table className="min-w-full bg-white">
         <thead>
           <tr>
-            <th className="py-2 px-4 border-b">Cluster Name</th>
-            <th className="py-2 px-4 border-b">Units</th>
-            <th className="py-2 px-4 border-b">Assigned User</th>
-            <th className="py-2 px-4 border-b">Actions</th>
+            <th className="py-2 px-4 border-b">Tên cụm</th>
+            <th className="py-2 px-4 border-b">Đơn vị</th>
+            <th className="py-2 px-4 border-b">Hành động</th>
           </tr>
         </thead>
         <tbody>
@@ -111,23 +111,24 @@ const ClusterPage: React.FC = () => {
             <tr key={cluster.id} className="hover:bg-gray-100">
               <td className="py-2 px-4 border-b">{cluster.name}</td>
               <td className="py-2 px-4 border-b">
-                {cluster.units.map((unit) => (
-                  <div key={unit.id} className="text-sm">
-                    {unit.name} - {unit.address}
-                  </div>
-                ))}
-              </td>
-              <td className="py-2 px-4 border-b">
-                {cluster.account ? cluster.account.username : 'Unassigned'}
+                <ul className="list-disc pl-5">
+                  {cluster.units.map((unit) => (
+                    <li key={unit.id} className="text-sm">
+                      <strong>{unit.name}</strong>: {unit.address}
+                    </li>
+                  ))}
+                </ul>
               </td>
               <td className="py-2 px-4 border-b">
                 <button
                   onClick={() => handleOpenModal(cluster)}
                   className="bg-yellow-500 text-white px-2 py-1 rounded mr-2 hover:bg-yellow-600"
                 >
-                  Edit
+                  Sửa
                 </button>
-                <button className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Delete</button>
+                <button className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
+                  Xóa
+                </button>
               </td>
             </tr>
           ))}
@@ -137,32 +138,38 @@ const ClusterPage: React.FC = () => {
         className="bg-blue-500 text-white px-4 py-2 rounded mt-4 hover:bg-blue-600"
         onClick={() => handleOpenModal()}
       >
-        + Add New Cluster
+        + Thêm cụm mới
       </button>
 
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded w-[600px]">
-            <h2 className="text-xl font-bold mb-4">{editMode ? 'Edit Cluster' : 'Create New Cluster'}</h2>
+            <h2 className="text-xl font-bold mb-4">
+              {editMode ? "Sửa cụm" : "Tạo cụm mới"}
+            </h2>
             <div className="mb-4">
-              <label className="block font-semibold mb-1">Cluster Name</label>
+              <label className="block font-semibold mb-1">Tên cụm</label>
               <input
                 type="text"
                 value={newCluster.name}
-                onChange={(e) => setNewCluster({ ...newCluster, name: e.target.value })}
+                onChange={(e) =>
+                  setNewCluster({ ...newCluster, name: e.target.value })
+                }
                 className="border rounded p-2 w-full"
               />
             </div>
             <div className="mb-4">
-              <label className="block font-semibold mb-1">Units (at least one)</label>
-              {newCluster.units.map((unit, index) => (
+              <label className="block font-semibold mb-1">
+                Đơn vị (ít nhất một)
+              </label>
+              {newCluster.units?.map((unit, index) => (
                 <div key={index} className="grid grid-cols-2 gap-4 mb-2">
                   <input
                     type="text"
-                    placeholder="Unit Name"
+                    placeholder="Tên đơn vị"
                     value={unit.name}
                     onChange={(e) => {
-                      const updatedUnits = [...newCluster.units];
+                      const updatedUnits = [...newCluster.units!];
                       updatedUnits[index].name = e.target.value;
                       setNewCluster({ ...newCluster, units: updatedUnits });
                     }}
@@ -170,10 +177,10 @@ const ClusterPage: React.FC = () => {
                   />
                   <input
                     type="text"
-                    placeholder="Unit Address"
+                    placeholder="Địa chỉ đơn vị"
                     value={unit.address}
                     onChange={(e) => {
-                      const updatedUnits = [...newCluster.units];
+                      const updatedUnits = [...newCluster.units!];
                       updatedUnits[index].address = e.target.value;
                       setNewCluster({ ...newCluster, units: updatedUnits });
                     }}
@@ -185,54 +192,29 @@ const ClusterPage: React.FC = () => {
                 onClick={() =>
                   setNewCluster({
                     ...newCluster,
-                    units: [...newCluster.units, { id: 0, name: '', address: '', latitude: 0, longitude: 0 }],
+                    units: [
+                      ...newCluster.units!,
+                      { id: 0, name: "", address: "" },
+                    ],
                   })
                 }
                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mt-2"
               >
-                + Add Unit
+                + Thêm đơn vị
               </button>
-            </div>
-            <div className="mb-4">
-              <label className="block font-semibold mb-1">Assigned Users</label>
-              <div className="border rounded p-2 h-[150px] overflow-y-auto">
-                {users.map((user) => (
-                  <div key={user.user_id} className="flex items-center mb-2">
-                    <input
-                      type="checkbox"
-                      checked={newCluster.assignedUsers.includes(user.user_id)}
-                      onChange={() => {
-                        if (newCluster.assignedUsers.includes(user.user_id)) {
-                          setNewCluster({
-                            ...newCluster,
-                            assignedUsers: newCluster.assignedUsers.filter((id) => id !== user.user_id),
-                          });
-                        } else {
-                          setNewCluster({
-                            ...newCluster,
-                            assignedUsers: [...newCluster.assignedUsers, user.user_id],
-                          });
-                        }
-                      }}
-                      className="mr-2"
-                    />
-                    <label>{user.username}</label>
-                  </div>
-                ))}
-              </div>
             </div>
             <div className="flex justify-end mt-4">
               <button
                 onClick={handleCloseModal}
                 className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mr-2"
-              > 
-                Cancel
+              >
+                Hủy
               </button>
               <button
                 onClick={handleSaveCluster}
                 className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
               >
-                {editMode ? 'Save Changes' : 'Create Cluster'}
+                {editMode ? "Lưu thay đổi" : "Tạo cụm"}
               </button>
             </div>
           </div>
