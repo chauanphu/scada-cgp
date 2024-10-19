@@ -22,7 +22,7 @@ export default function HomePage() {
 
   const fetchClusters = async () => {
       const token = Cookies.get('token');
-      const response = await fetch(`${NEXT_PUBLIC_API_URL}/clusters/my-clusters`, {
+      const response = await fetch(`${NEXT_PUBLIC_API_URL}/clusters`, {
           method: "GET",
           headers: {
               "Content-Type": "application/json",
@@ -35,7 +35,7 @@ export default function HomePage() {
 
   const getPermissions = async () => {
     const token = Cookies.get('token');
-    const response = await fetch("http://localhost:8000/api/auth/role/check", {
+    const response = await fetch(`${NEXT_PUBLIC_API_URL}/auth/role/check`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
