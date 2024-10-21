@@ -124,9 +124,9 @@ const ReportPage: React.FC = () => {
           onChange={(e) => setView(e.target.value as View)}
           className="p-2 border rounded"
         >
-          <option value={View.HOURLY}>Hourly</option>
-          <option value={View.DAILY}>Daily</option>
-          <option value={View.MONTHLY}>Monthly</option>
+          <option value={View.HOURLY}>Theo giờ</option>
+          <option value={View.DAILY}>Theo ngày</option>
+          <option value={View.MONTHLY}>Theo tháng</option>
         </select>
       </div>
       <div className="h-96">

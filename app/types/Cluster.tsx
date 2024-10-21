@@ -1,7 +1,7 @@
 export type Unit = {
     id: number,
     name: string;
-    address: string;
+    mac: string;
     latitude?: number;
     longitude?: number;
     toggle?: boolean;
@@ -10,7 +10,7 @@ export type Unit = {
 export type Cluster = {
     id: number;
     name: string;
-    url: string;
+    // url: string;
     units: Unit[];
 };
 
@@ -20,8 +20,8 @@ export type UserShortened = {
 }
 
 export type ClusterFull = {
-    name: string;
     id: number;
+    name: string;
     units: Unit[];
     created: string;
     updated: string;
