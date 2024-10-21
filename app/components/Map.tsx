@@ -1,18 +1,25 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import L, { LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
-import Cookies from "js-cookie";
 import iconOn from "@/images/markers/on.png";
 import iconOff from "@/images/markers/off.png";
 import iconDisable from "@/images/markers/disable.png";
 import { Cluster, Unit } from "@/types/Cluster";
 import { RightSidebar } from "./RightSidebar";
+import { LatLngExpression } from "leaflet";
 
 // Dynamically import react-leaflet components to avoid SSR issues
-const MapContainer = dynamic(() => import("react-leaflet").then(mod => mod.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import("react-leaflet").then(mod => mod.TileLayer), { ssr: false });
-const Marker = dynamic(() => import("react-leaflet").then(mod => mod.Marker), { ssr: false });
+const MapContainer = dynamic(() => import("./MapContainerWrapper"), {
+  ssr: false,
+});
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Marker),
+  { ssr: false }
+);
 
 interface MapProps {
   selectedUnit: Unit | null;
@@ -21,35 +28,31 @@ interface MapProps {
   clusters: Cluster[];
 }
 
-function GetIcon(iconSize: number, isConnected: boolean, isLightOn: boolean) {
-  const size: [number, number] = [iconSize, iconSize];
-
-  if (isConnected) {
-    if (isLightOn) {
-      return L.icon({ iconUrl: iconOn.src, iconSize: size });
-    } else {
-      return L.icon({ iconUrl: iconOff.src, iconSize: size });
-    }
-  } else {
-    return L.icon({ iconUrl: iconDisable.src, iconSize: size });
-  }
-}
-
 export const Map = ({
   selectedUnit,
   handleToggleUnit,
   setSelectedUnit,
   clusters,
 }: MapProps) => {
-  const mapRef = useRef<L.Map | null>(null);
   const [unitStatus, setUnitStatus] = useState<
     Record<number, { isOn: boolean; isConnected: boolean }>
   >({});
 
-  const panToUnit = (unit: Unit) => {
-    if (mapRef.current) {
-      const map = mapRef.current as L.Map;
-      if (unit.latitude && unit.longitude)
+  const [leafletMap, setLeafletMap] = useState<typeof import("leaflet") | null>(
+    null
+  );
+
+  useEffect(() => {
+    // Dynamically import Leaflet on the client side
+    if (typeof window !== "undefined") {
+      import("leaflet").then((L) => {
+        setLeafletMap(L);
+      });
+    }
+  }, []);
+
+  const panToUnit = (map: any, unit: Unit) => {
+    if (map && unit.latitude && unit.longitude) {
       map.setView([unit.latitude, unit.longitude - 0.001], 22);
     }
   };
@@ -85,46 +88,72 @@ export const Map = ({
     };
   };
 
-  useEffect(() => {
-    if (selectedUnit) {
-      panToUnit(selectedUnit);
+  // Use a callback ref to get access to the map instance
+  const handleMapRef = (mapInstance: any) => {
+    if (mapInstance && selectedUnit) {
+      panToUnit(mapInstance, selectedUnit);
       const cleanup = initializeWebSocket(selectedUnit.id);
       return () => {
         if (cleanup) cleanup();
       };
     }
-  }, [selectedUnit]);
+  };
+
+  // Ensure that any code relying on Leaflet is only executed on the client
+  const GetIcon = (
+    iconSize: number,
+    isConnected: boolean,
+    isLightOn: boolean
+  ) => {
+    if (!leafletMap) return undefined; // Ensure Leaflet is loaded
+    const size: [number, number] = [iconSize, iconSize];
+    const L = leafletMap;
+
+    if (isConnected) {
+      if (isLightOn) {
+        return L.icon({ iconUrl: iconOn.src, iconSize: size });
+      } else {
+        return L.icon({ iconUrl: iconOff.src, iconSize: size });
+      }
+    } else {
+      return L.icon({ iconUrl: iconDisable.src, iconSize: size });
+    }
+  };
 
   return (
     <div className="flex">
-      <MapContainer
-        ref={mapRef}
-        center={[10.8231, 106.6297] as LatLngExpression}
-        zoom={22}
-        className="h-screen w-full"
-      >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        {clusters.length > 0 &&
-          clusters.flatMap((cluster) =>
-            cluster.units.map((unit) => {
-              const status = unitStatus[unit.id] || {
-                isOn: false,
-                isConnected: false,
-              };
-              const icon = GetIcon(30, status.isConnected, status.isOn);
-              return (
-                <Marker
-                  key={unit.id}
-                  position={[unit.latitude, unit.longitude] as LatLngExpression}
-                  icon={icon}
-                  eventHandlers={{
-                    click: () => setSelectedUnit(unit),
-                  }}
-                />
-              );
-            })
-          )}
-      </MapContainer>
+      {leafletMap && (
+        <MapContainer
+          whenCreated={handleMapRef} // Use this callback instead of ref to get the map instance
+          center={[10.8231, 106.6297] as LatLngExpression}
+          zoom={22}
+          className="h-screen w-full"
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {clusters.length > 0 &&
+            clusters.flatMap((cluster) =>
+              cluster.units.map((unit) => {
+                const status = unitStatus[unit.id] || {
+                  isOn: false,
+                  isConnected: false,
+                };
+                const icon = GetIcon(30, status.isConnected, status.isOn);
+                return (
+                  <Marker
+                    key={unit.id}
+                    position={
+                      [unit.latitude, unit.longitude] as LatLngExpression
+                    }
+                    icon={icon}
+                    eventHandlers={{
+                      click: () => setSelectedUnit(unit),
+                    }}
+                  />
+                );
+              })
+            )}
+        </MapContainer>
+      )}
       <RightSidebar
         selectedUnit={selectedUnit}
         handleToggleUnit={handleToggleUnit}

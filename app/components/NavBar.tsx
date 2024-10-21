@@ -94,7 +94,7 @@ export function Navbar({ permissions }: { permissions: PermissionEnum[] }) {
                     onClick={handleLogout}
                 >
                     <LogOut className="h-5 w-5" />
-                    <span>Logout</span>
+                    <span>Đăng xuất</span>
                 </Button>
             </div>
         </div>

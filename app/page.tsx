@@ -4,8 +4,7 @@ import { LeftSidebar } from '@/components/LeftSidebar';
 import { Map } from '@/components/Map';
 import { Cluster } from '@/types/Cluster'; // Update the imports
 import Cookies from 'js-cookie';
-import { Navbar } from './components/NavBar';
-import { getClusters, NEXT_PUBLIC_API_URL } from '@/lib/api';
+import { getClusters } from '@/lib/api';
 
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
