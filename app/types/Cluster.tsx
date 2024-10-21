@@ -27,8 +27,13 @@ export type ClusterFull = {
     updated: string;
 };
 
+export type CreateUnit = {
+    id?: Partial<number | null | undefined>;
+    name: string;
+    mac: string;
+};
+
 export type CreateClusterData = {
     name: string;
-    units: Partial<Unit[]>;
-    account_id: number;
+    units: Partial<CreateUnit[]>;
 }

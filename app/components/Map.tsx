@@ -132,7 +132,9 @@ export const Map = ({
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           {clusters.length > 0 &&
             clusters.flatMap((cluster) =>
-              cluster.units.map((unit) => {
+              cluster.units.filter(
+                (unit) => unit.latitude && unit.longitude
+              ).map((unit) => {
                 const status = unitStatus[unit.id] || {
                   isOn: false,
                   isConnected: false,

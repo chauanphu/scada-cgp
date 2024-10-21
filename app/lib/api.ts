@@ -181,9 +181,9 @@ export async function createCluster(token: string, clusterData: CreateClusterDat
   return response.json();
 }
 
-export async function updateCluster(token: string, clusterId: number, clusterData: Partial<ClusterFull>): Promise<ClusterFull> {
+export async function updateCluster(token: string, clusterId: number, clusterData: Partial<CreateClusterData>): Promise<ClusterFull> {
   const response = await fetch(`${API_URL}/clusters/${clusterId}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',

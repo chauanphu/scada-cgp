@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, Fragment } from "react";
 import Head from "next/head";
-import { Unit, Cluster } from "@/types/Cluster";
+import { Unit, Cluster, CreateUnit } from "@/types/Cluster";
 import { getClusters, createCluster, updateCluster, deleteCluster } from "@/lib/api";
 import { CreateClusterData } from "@/types/Cluster";
 import Cookies from "js-cookie";
@@ -14,11 +14,12 @@ const ClusterPage: React.FC = () => {
   const [editingClusterId, setEditingClusterId] = useState<number | null>(null);
   const [creating, setCreating] = useState<boolean>(false);
   const [formData, setFormData] = useState<{
+    id?: number;
     name: string;
-    units: Unit[];
+    units: CreateUnit[];
   }>({
     name: "",
-    units: [{ id: 0, name: "", mac: "" }],
+    units: [{ id: null, name: "", mac: "" }],
   });
 
   useEffect(() => {
@@ -60,7 +61,7 @@ const ClusterPage: React.FC = () => {
   const addUnit = () => {
     setFormData({
       ...formData,
-      units: [...formData.units, { id: 0, name: "", mac: "" }],
+      units: [...formData.units, { id: null, name: "", mac: "" }],
     });
   };
 
@@ -91,11 +92,10 @@ const ClusterPage: React.FC = () => {
       const newClusterData: CreateClusterData = {
         name: formData.name,
         units: formData.units,
-        account_id: 1,
       };
       const newCluster = await createCluster(token, newClusterData);
       setClusters([...clusters, newCluster]);
-      setFormData({ name: "", units: [{ id: 0, name: "", mac: "" }] });
+      setFormData({ name: "", units: [{ id: null, name: "", mac: "" }] });
       setCreating(false);
     } catch (err: any) {
       console.error(err);
@@ -122,13 +122,14 @@ const ClusterPage: React.FC = () => {
     setError("");
     try {
       const token = Cookies.get("token") || "";
+      formData.id = clusterId;
       const updatedCluster = await updateCluster(token, clusterId, formData);
       
       setClusters(
         clusters.map(cluster => (cluster.id === clusterId ? updatedCluster : cluster))
       );
       setEditingClusterId(null);
-      setFormData({ name: "", units: [{ id: 0, name: "", mac: "" }] });
+      setFormData({ name: "", units: [{ id: null, name: "", mac: "" }] });
     } catch (err: any) {
       console.error(err);
       setError("Lỗi khi cập nhật cụm.");
@@ -247,7 +248,7 @@ const ClusterPage: React.FC = () => {
                 <button
                   onClick={() => {
                     setCreating(false);
-                    setFormData({ name: "", units: [{ id: 0, name: "", mac: "" }] });
+                    setFormData({ name: "", units: [{ id: null, name: "", mac: "" }] });
                     setError("");
                   }}
                   className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400"
@@ -342,7 +343,7 @@ const ClusterPage: React.FC = () => {
                           <ul className="list-disc pl-5">
                             {cluster.units.map((unit) => (
                               <li key={unit.id} className="text-sm">
-                                <strong>{unit.name}</strong>: {unit.mac}
+                                <strong>{unit.name}</strong>
                               </li>
                             ))}
                           </ul>
@@ -361,7 +362,7 @@ const ClusterPage: React.FC = () => {
                             <button
                               onClick={() => {
                                 setEditingClusterId(null);
-                                setFormData({ name: "", units: [{ id: 0, name: "", mac: "" }] });
+                                setFormData({ name: "", units: [{ id: null, name: "", mac: "" }] });
                                 setError("");
                               }}
                               className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400"
