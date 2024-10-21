@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Fragment } from "react";
 import { Dialog, Transition, TransitionChild } from "@headlessui/react";
-import { deleteUser, getRoles, Role, updateUser } from "@/lib/api";
+import { createUser, deleteUser, getRoles, getUsers, Role, updateUser } from "@/lib/api";
 import Cookies from 'js-cookie';
 import Head from "next/head";
 
@@ -65,20 +65,8 @@ export default function UserManagement() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/user", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Đảm bảo cookie được gửi đi
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Không lấy được người dùng");
-      }
-
-      const data: User[] = await response.json();
+      const token = Cookies.get('token') || '';
+      const data = await getUsers(token);
       setUsers(data);
     } catch (err: any) {
       console.error(err);
@@ -134,21 +122,9 @@ export default function UserManagement() {
       const { username, email, role, password } = newUser;
       const payload: CreateUserRequest = { username, email, role, password };
 
-      const response = await fetch("/api/user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Đảm bảo cookie được gửi đi
-        body: JSON.stringify(payload),
-      });
+      const token = Cookies.get('token') || '';
+      const createdUser: User = await createUser(token, payload);
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Không tạo được người dùng");
-      }
-
-      const createdUser: User = await response.json();
       setUsers([...users, createdUser]);
       setNewUser({
         username: "",

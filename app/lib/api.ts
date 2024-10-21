@@ -84,7 +84,9 @@ export async function getClusters(token: string): Promise<Cluster[]> {
 export async function getUsers(token: string): Promise<User[]> {
   const response = await fetch(`${API_URL}/user`, {
     headers: {
-      Authorization: `Bearer ${token}`,
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
     },
   });
 
