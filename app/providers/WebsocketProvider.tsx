@@ -37,44 +37,56 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     }, [isAuthenticated, token, getClusters]);
 
     useEffect(() => {
-        if (isAuthenticated && token && selectedUnit) {
-            const ws = new WebSocket(`ws://api.cgp.captechvn.com/ws/unit/${selectedUnit.id}/status`);
+        let reconnectTimeout: NodeJS.Timeout | null = null;
 
-            ws.onopen = () => {
-                console.log("WebSocket Connected");
-                setIsConnected(true);
-            };
+        const connectWebSocket = () => {
+            if (isAuthenticated && token && selectedUnit) {
+                const ws = new WebSocket(`ws://api.cgp.captechvn.com/ws/unit/${selectedUnit.id}/status`);
 
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data) {
-                    setPower(data.power);
-                    setCurrent(data.current);
-                    setVoltage(data.voltage);
-                    setIsOn(data.toggle === 1);
-                }
-                console.log("Received WebSocket message:", data);
-            };
+                ws.onopen = () => {
+                    console.log("WebSocket Connected");
+                    setIsConnected(true);
+                };
 
-            ws.onerror = (error) => {
-                console.error("WebSocket Error:", error);
-                setIsConnected(false);
-            };
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data) {
+                        setPower(data.power);
+                        setCurrent(data.current);
+                        setVoltage(data.voltage);
+                        setIsOn(data.toggle === 1);
+                    }
+                    console.log("Received WebSocket message:", data);
+                };
 
-            ws.onclose = () => {
-                console.log("WebSocket Disconnected, reconnecting...");
-                setIsConnected(false);
-                setTimeout(() => {
-                    setSocket(new WebSocket(`ws://api.cgp.captechvn.com/ws/unit/${selectedUnit.id}/status`));
-                }, 3000);
-            };
+                ws.onerror = (error) => {
+                    console.error("WebSocket Error:", error);
+                    setIsConnected(false);
+                };
 
-            setSocket(ws);
+                ws.onclose = () => {
+                    console.log("WebSocket Disconnected, reconnecting in 1-2 seconds...");
+                    setIsConnected(false);
 
-            return () => {
-                ws.close();
-            };
-        }
+                    reconnectTimeout = setTimeout(() => {
+                        setSocket(new WebSocket(`ws://api.cgp.captechvn.com/ws/unit/${selectedUnit.id}/status`));
+                    }, 1000);
+                };
+
+                setSocket(ws);
+            }
+        };
+
+        connectWebSocket();
+
+        return () => {
+            if (reconnectTimeout) {
+                clearTimeout(reconnectTimeout);
+            }
+            if (socket) {
+                socket.close();
+            }
+        };
     }, [isAuthenticated, token, selectedUnit]);
 
     const sendMessage = (message: string) => {
