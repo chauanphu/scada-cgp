@@ -36,7 +36,7 @@ export async function checkLogin(token: string): Promise<boolean> {
 }
 
 export async function getToken(username: string, password: string): Promise<string> {
-  const response = await fetch(`${API_URL}/auth/token/`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/auth/token/`, {
     method: 'POST',
     headers: {
       'accept': 'application/json',

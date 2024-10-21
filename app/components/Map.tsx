@@ -18,6 +18,7 @@ interface MapProps {
   selectedUnit: Unit | null;
   handleToggleUnit: (unitID: number) => void;
   setSelectedUnit: (unit: Unit | null) => void;
+  clusters: Cluster[];
 }
 
 function GetIcon(iconSize: number, isConnected: boolean, isLightOn: boolean) {
@@ -38,29 +39,17 @@ export const Map = ({
   selectedUnit,
   handleToggleUnit,
   setSelectedUnit,
+  clusters,
 }: MapProps) => {
   const mapRef = useRef<L.Map | null>(null);
-  const [clusters, setClusters] = useState<Cluster[]>([]);
   const [unitStatus, setUnitStatus] = useState<
     Record<number, { isOn: boolean; isConnected: boolean }>
   >({});
 
-  const fetchClusters = async () => {
-    const token = Cookies.get("token");
-    const response = await fetch("/api/clusters/", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    const data = await response.json();
-    setClusters(data);
-  };
-
   const panToUnit = (unit: Unit) => {
     if (mapRef.current) {
       const map = mapRef.current as L.Map;
+      if (unit.latitude && unit.longitude)
       map.setView([unit.latitude, unit.longitude - 0.001], 22);
     }
   };
@@ -95,10 +84,6 @@ export const Map = ({
       }
     };
   };
-
-  useEffect(() => {
-    fetchClusters();
-  }, []);
 
   useEffect(() => {
     if (selectedUnit) {
