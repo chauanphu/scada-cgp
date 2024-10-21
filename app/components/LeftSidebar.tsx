@@ -4,6 +4,7 @@ import { CardHeader, CardContent } from "@/components/ui/card";
 import { Search } from 'lucide-react';
 import { Cluster } from '@/types/Cluster'; 
 import { Input } from "@/components/ui/input";
+import { NEXT_PUBLIC_WS_URL } from "@/lib/api";
 
 interface LeftSidebarProps {
   searchTerm: string;
@@ -31,42 +32,42 @@ export const LeftSidebar = ({
     setSelectedUnit(unit); 
   };
 
-  const initializeWebSocket = (unitId: number) => {
-    const ws = new WebSocket(`ws://api.cgp.captechvn.com/ws/unit/${unitId}/status`);
+  // const initializeWebSocket = (unitId: number) => {
+  //   const ws = new WebSocket(`${NEXT_PUBLIC_WS_URL}/unit/${unitId}/status`);
 
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const isConnected = data.power !== 0;
-      const isOn = data.toggle === 1;
+  //   ws.onmessage = (event) => {
+  //     const data = JSON.parse(event.data);
+  //     const isConnected = data.power !== 0;
+  //     const isOn = data.toggle === 1;
 
-      setUnitStatus(prevState => ({
-        ...prevState,
-        [unitId]: { isOn, isConnected },
-      }));
-    };
+  //     setUnitStatus(prevState => ({
+  //       ...prevState,
+  //       [unitId]: { isOn, isConnected },
+  //     }));
+  //   };
 
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
+  //   ws.onerror = (error) => {
+  //     console.error('WebSocket error:', error);
+  //   };
 
-    ws.onclose = () => {
-      console.log('WebSocket connection closed');
-    };
+  //   ws.onclose = () => {
+  //     console.log('WebSocket connection closed');
+  //   };
 
-    return () => {
-      if (ws) {
-        ws.close();
-      }
-    };
-  };
+  //   return () => {
+  //     if (ws) {
+  //       ws.close();
+  //     }
+  //   };
+  // };
 
-  useEffect(() => {
-    filteredClusters.forEach(cluster => {
-      cluster.units.forEach(unit => {
-        initializeWebSocket(unit.id);
-      });
-    });
-  }, [filteredClusters]);
+  // useEffect(() => {
+  //   filteredClusters.forEach(cluster => {
+  //     cluster.units.forEach(unit => {
+  //       initializeWebSocket(unit.id);
+  //     });
+  //   });
+  // }, [filteredClusters]);
 
   const getStatusColor = (isConnected: boolean, isOn: boolean): string => {
     if (!isConnected) return 'bg-gray-500'; // Disconnected

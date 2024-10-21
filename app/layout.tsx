@@ -57,7 +57,7 @@ export default function RootLayout({
 
   useEffect(() => {
     getPermissions();
-  });
+  }, []);
 
   return (
     <html lang="en">

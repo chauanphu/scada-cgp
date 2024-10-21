@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from "react";
 import { useAPI } from "./APIProvider";
+import {NEXT_PUBLIC_WS_URL} from "@/lib/api";
 
 const WebSocketContext = createContext<any>(null);
 
@@ -15,7 +16,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     const [current, setCurrent] = useState<number>(0);
     const [voltage, setVoltage] = useState<number>(0);
     const [isOn, setIsOn] = useState<boolean>(false);
-    const [selectedUnit, setSelectedUnit] = useState<any>(null); 
+    const [selectedUnit, setSelectedUnit] = useState<any>(null);
 
     useEffect(() => {
         const fetchClusterData = async () => {
@@ -39,9 +40,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     useEffect(() => {
         let reconnectTimeout: NodeJS.Timeout | null = null;
 
+        // Function to initialize the WebSocket
         const connectWebSocket = () => {
             if (isAuthenticated && token && selectedUnit) {
-                const ws = new WebSocket(`ws://api.cgp.captechvn.com/ws/unit/${selectedUnit.id}/status`);
+                if (socket) {
+                    // Close any existing socket before creating a new one
+                    socket.close();
+                }
+                const ws = new WebSocket(`${NEXT_PUBLIC_WS_URL}/unit/${selectedUnit.id}/status`);
 
                 ws.onopen = () => {
                     console.log("WebSocket Connected");
@@ -56,7 +62,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
                         setVoltage(data.voltage);
                         setIsOn(data.toggle === 1);
                     }
-                    console.log("Received WebSocket message:", data);
                 };
 
                 ws.onerror = (error) => {
@@ -65,19 +70,22 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
                 };
 
                 ws.onclose = () => {
-                    console.log("WebSocket Disconnected, reconnecting in 1-2 seconds...");
+                    console.log("WebSocket Disconnected, reconnecting in 3 seconds...");
                     setIsConnected(false);
 
+                    // Delay reconnection to avoid spamming reconnection attempts
                     reconnectTimeout = setTimeout(() => {
-                        setSocket(new WebSocket(`ws://api.cgp.captechvn.com/ws/unit/${selectedUnit.id}/status`));
-                    }, 1000);
+                        connectWebSocket(); // Reconnect
+                    }, 3000);
                 };
 
                 setSocket(ws);
             }
         };
 
-        connectWebSocket();
+        if (selectedUnit) {
+            connectWebSocket(); // Only connect WebSocket when selectedUnit is set
+        }
 
         return () => {
             if (reconnectTimeout) {

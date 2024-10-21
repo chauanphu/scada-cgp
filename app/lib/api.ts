@@ -3,10 +3,10 @@
 
 import { Cluster, ClusterFull, CreateClusterData } from "@/types/Cluster";
 import { EnergyData } from "@/types/Report";
-import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const NEXT_PUBLIC_WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 
 export type Role = {
   role_id: number;
