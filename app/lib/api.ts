@@ -36,7 +36,7 @@ export async function checkLogin(token: string): Promise<boolean> {
 }
 
 export async function getToken(username: string, password: string): Promise<string> {
-  const response = await fetch(`${API_URL}/auth/token/`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/auth/token/`, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
@@ -167,14 +167,50 @@ export async function createCluster(token: string, clusterData: CreateClusterDat
   const response = await fetch(`${API_URL}/clusters`, {
     method: 'POST',
     headers: {
+      'accept': 'application/json',
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
     body: JSON.stringify(clusterData),
   });
 
   if (!response.ok) {
     throw new Error('Failed to create cluster');
+  }
+
+  return response.json();
+}
+
+export async function updateCluster(token: string, clusterId: number, clusterData: Partial<ClusterFull>): Promise<ClusterFull> {
+  const response = await fetch(`${API_URL}/clusters/${clusterId}`, {
+    method: 'PATCH',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(clusterData),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update cluster');
+  }
+
+  return response.json();
+}
+
+export async  function deleteCluster(token: string, clusterId: number): Promise<ClusterFull> {
+  const response = await fetch(`${API_URL}/clusters/${clusterId}`, {
+    method: 'DELETE',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to delete cluster');
   }
 
   return response.json();
@@ -193,8 +229,9 @@ export enum View {
 export async function getEnergyData(token: string, view: View): Promise<EnergyData[]> {
   const response = await fetch(`${API_URL}/status/enery?view=${view}`, {
     headers: {
+      'accept': 'application/json',
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      'Authorization': `Bearer ${token}`,
     },
   });
   if (response.status !== 200) {
