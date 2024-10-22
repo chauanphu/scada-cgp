@@ -1,10 +1,9 @@
 // app/lib/api.ts
 // Adjusted to ensure API_URL is securely accessed on the server side.
 
-import { Cluster, ClusterFull, CreateClusterData } from "@/types/Cluster";
+import { Cluster, ClusterFull, CreateClusterData, Schedule } from "@/types/Cluster";
 import { EnergyData } from "@/types/Report";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
 export const NEXT_PUBLIC_WS_URL = process.env.NEXT_PUBLIC_WS_URL;
 
@@ -23,7 +22,7 @@ export type User = {
 
 // Check if logged in
 export async function checkLogin(token: string): Promise<boolean> {
-  const response = await fetch(`${API_URL}/auth/`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/auth/`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -65,7 +64,7 @@ export async function getToken(username: string, password: string): Promise<stri
 }
 
 export async function getClusters(token: string): Promise<Cluster[]> {
-  const response = await fetch(`${API_URL}/clusters/`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/clusters/`, {
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
@@ -82,7 +81,7 @@ export async function getClusters(token: string): Promise<Cluster[]> {
 }
 
 export async function getUsers(token: string): Promise<User[]> {
-  const response = await fetch(`${API_URL}/user`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/user`, {
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
@@ -97,7 +96,7 @@ export async function getUsers(token: string): Promise<User[]> {
   return data;
 }
 export async function createUser(token: string, userData: Partial<User>): Promise<User> {
-  const response = await fetch(`${API_URL}/user`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/user`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -114,7 +113,7 @@ export async function createUser(token: string, userData: Partial<User>): Promis
 }
 
 export async function updateUser(token: string, userId: number, userData: Partial<User>): Promise<User> {
-  const response = await fetch(`${API_URL}/user/${userId}`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/user/${userId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -131,7 +130,7 @@ export async function updateUser(token: string, userId: number, userData: Partia
 }
 
 export async function deleteUser(token: string, userId: number): Promise<User> {
-  const response = await fetch(`${API_URL}/user/${userId}`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/user/${userId}`, {
     method: 'DELETE',
     headers: {
       'accept': 'application/json',
@@ -149,7 +148,7 @@ export async function deleteUser(token: string, userId: number): Promise<User> {
 export async function getFullClusters(token: string): Promise<ClusterFull> {
   // Get token from cookie
   
-  const response = await fetch(`${API_URL}/clusters`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/clusters`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -166,7 +165,7 @@ export async function getFullClusters(token: string): Promise<ClusterFull> {
 // Create a new cluster
 //Body: {name: string, units: Unit[], account_id: number}
 export async function createCluster(token: string, clusterData: CreateClusterData): Promise<ClusterFull> {
-  const response = await fetch(`${API_URL}/clusters`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/clusters`, {
     method: 'POST',
     headers: {
       'accept': 'application/json',
@@ -184,7 +183,7 @@ export async function createCluster(token: string, clusterData: CreateClusterDat
 }
 
 export async function updateCluster(token: string, clusterId: number, clusterData: Partial<CreateClusterData>): Promise<ClusterFull> {
-  const response = await fetch(`${API_URL}/clusters/${clusterId}`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/clusters/${clusterId}`, {
     method: 'PUT',
     headers: {
       'accept': 'application/json',
@@ -202,7 +201,7 @@ export async function updateCluster(token: string, clusterId: number, clusterDat
 }
 
 export async  function deleteCluster(token: string, clusterId: number): Promise<ClusterFull> {
-  const response = await fetch(`${API_URL}/clusters/${clusterId}`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/clusters/${clusterId}`, {
     method: 'DELETE',
     headers: {
       'accept': 'application/json',
@@ -229,7 +228,7 @@ export enum View {
 
 // GET enery data
 export async function getEnergyData(token: string, view: View): Promise<EnergyData[]> {
-  const response = await fetch(`${API_URL}/status/enery?view=${view}`, {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/status/enery?view=${view}`, {
     headers: {
       'accept': 'application/json',
       'Content-Type': 'application/json',
@@ -324,5 +323,32 @@ export async function downloadCSVAudit(token: string): Promise<void> {
   } catch (error) {
     console.error('Error downloading CSV audit logs:', error);
     throw error;
+  }
+}
+
+// command unit through /api/clusters/units/{unit_id} PATCH
+export async function setCommand(
+  token: string, 
+  unitId: number, 
+  type: 'toggle' | 'schedule',
+  payload: boolean | Schedule): Promise<void> {
+  // Check if the command is a TOGGLE or SCHEDULE
+  const body = JSON.stringify({
+    type,
+    payload,
+  });
+  console.log('payload', body);
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/clusters/units/${unitId}`, {
+    method: 'PATCH',
+    headers: {
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: body,
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to toggle light');
   }
 }

@@ -37,3 +37,10 @@ export type CreateClusterData = {
     name: string;
     units: Partial<CreateUnit[]>;
 }
+
+export type Schedule = {
+    hourOn?: number,
+    minuteOn?: number,
+    hourOff?: number,
+    minuteOff?: number
+}
