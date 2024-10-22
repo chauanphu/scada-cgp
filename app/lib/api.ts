@@ -1,6 +1,7 @@
 // app/lib/api.ts
 // Adjusted to ensure API_URL is securely accessed on the server side.
 
+import { PermissionEnum } from "@/components/NavBar";
 import { Cluster, ClusterFull, CreateClusterData } from "@/types/Cluster";
 import { EnergyData } from "@/types/Report";
 
@@ -148,7 +149,7 @@ export async function deleteUser(token: string, userId: number): Promise<User> {
 
 export async function getFullClusters(token: string): Promise<ClusterFull> {
   // Get token from cookie
-  
+
   const response = await fetch(`${API_URL}/clusters`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -162,7 +163,22 @@ export async function getFullClusters(token: string): Promise<ClusterFull> {
   return response.json();
 }
 
+export async function getPermissions(token: string): Promise<PermissionEnum[]> {
+  const response = await fetch(`${NEXT_PUBLIC_API_URL}/auth/role/check`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
+  if (!response.ok) {
+    throw new Error('Failed to fetch permissions');
+  }
+
+  const data = await response.json();
+  return data.permissions.map((permission: any) => permission.permission_name);
+}
 // Create a new cluster
 //Body: {name: string, units: Unit[], account_id: number}
 export async function createCluster(token: string, clusterData: CreateClusterData): Promise<ClusterFull> {
@@ -201,7 +217,7 @@ export async function updateCluster(token: string, clusterId: number, clusterDat
   return response.json();
 }
 
-export async  function deleteCluster(token: string, clusterId: number): Promise<ClusterFull> {
+export async function deleteCluster(token: string, clusterId: number): Promise<ClusterFull> {
   const response = await fetch(`${API_URL}/clusters/${clusterId}`, {
     method: 'DELETE',
     headers: {
