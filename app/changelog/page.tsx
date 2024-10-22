@@ -6,12 +6,15 @@ import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
 import { getAuditLogs, AuditLog, PaginatedAuditLogs, downloadCSVAudit } from '@/lib/api';
 import Cookies from 'js-cookie';
+import { useAPI } from '@/contexts/APIProvider';
+import { Navbar } from '@/components/NavBar';
 
 const ChangelogPage: React.FC = () => {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [totalPages, setTotalPages] = useState<number>(0);
+  const { permissions } = useAPI()
 
   const token = Cookies.get('token') || '';
   // Trạng thái phân trang
@@ -88,6 +91,8 @@ const ChangelogPage: React.FC = () => {
         <title>Nhật ký thay đổi</title>
         <meta name="description" content="Nhật ký thay đổi" />
       </Head>
+      <Navbar permissions={permissions} />
+
       <div className="min-h-screen bg-gray-100 p-4">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold mb-6">Nhật ký thay đổi</h1>
@@ -212,11 +217,10 @@ const ChangelogPage: React.FC = () => {
                   <button
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`px-3 py-2 ml-0 leading-tight ${
-                      currentPage === 1
+                    className={`px-3 py-2 ml-0 leading-tight ${currentPage === 1
                         ? 'text-gray-400 cursor-not-allowed'
                         : 'text-blue-600 hover:bg-blue-100 hover:text-blue-700'
-                    } bg-white border border-gray-300 rounded-l-lg`}
+                      } bg-white border border-gray-300 rounded-l-lg`}
                   >
                     Trước
                   </button>
@@ -234,11 +238,10 @@ const ChangelogPage: React.FC = () => {
                       <button
                         key={page}
                         onClick={() => goToPage(Number(page))}
-                        className={`px-3 py-2 leading-tight border border-gray-300 ${
-                          page === currentPage
+                        className={`px-3 py-2 leading-tight border border-gray-300 ${page === currentPage
                             ? 'text-white bg-blue-600'
                             : 'text-blue-600 bg-white hover:bg-blue-100 hover:text-blue-700'
-                        }`}
+                          }`}
                       >
                         {page}
                       </button>
@@ -249,11 +252,10 @@ const ChangelogPage: React.FC = () => {
                   <button
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`px-3 py-2 leading-tight ${
-                      currentPage === totalPages
+                    className={`px-3 py-2 leading-tight ${currentPage === totalPages
                         ? 'text-gray-400 cursor-not-allowed'
                         : 'text-blue-600 hover:bg-blue-100 hover:text-blue-700'
-                    } bg-white border border-gray-300 rounded-r-lg`}
+                      } bg-white border border-gray-300 rounded-r-lg`}
                   >
                     Tiếp
                   </button>
