@@ -8,10 +8,18 @@ interface WebSocketProviderProps {
     children: ReactNode;
 }
 
+export type UnitStatus = {
+    isOn: boolean;
+    isConnected: boolean;
+    power: number;
+    current: number;
+    voltage: number;
+};
+
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }) => {
     const { token, isAuthenticated, clusters } = useAPI();
     const [sockets, setSockets] = useState<Map<number, WebSocket>>(new Map());
-    const [unitStatus, setUnitStatus] = useState<Record<number, { isOn: boolean; isConnected: boolean }>>({});
+    const [unitStatus, setUnitStatus] = useState<Record<number, UnitStatus>>({});
 
     useEffect(() => {
         const connectWebSocket = (unitId: number) => {
@@ -28,14 +36,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
                 setUnitStatus((prevState) => ({
                     ...prevState,
-                    [unitId]: { isOn, isConnected },
+                    [unitId]: { 
+                        isOn, 
+                        isConnected,
+                        power: data.power,
+                        current: data.current,
+                        voltage: data.voltage,
+                    },
                 }));
 
                 // Handle "alive" status if necessary
                 if (data.alive === "0") {
                     setUnitStatus((prevState) => ({
                         ...prevState,
-                        [unitId]: { ...prevState[unitId], isConnected: false },
+                        [unitId]: { 
+                            ...prevState[unitId], 
+                            isConnected: false,
+                            power: 0,
+                            current: 0,
+                            voltage: 0,
+                        },
                     }));
                 }
             };
@@ -48,7 +68,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
                 console.log(`WebSocket Disconnected for unit ${unitId}`);
                 // Attempt to reconnect after 3 seconds
                 setTimeout(() => {
-                    connectWebSocket(unitId);
+                    // connectWebSocket(unitId);
                 }, 3000);
             };
 
@@ -82,12 +102,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     const toggleLight = (unitId: number) => {
         const status = unitStatus[unitId];
+        console.log("Unit id: ", unitId)
+        console.log("Unit: ", status)
         if (status) {
-            sendMessage(unitId, JSON.stringify({ toggle: status.isOn ? 0 : 1 }));
+            // sendMessage(unitId, JSON.stringify({ toggle: status.isOn ? 0 : 1 }));
             setUnitStatus((prevState) => ({
                 ...prevState,
                 [unitId]: { ...status, isOn: !status.isOn },
             }));
+            console.log("Unit: ", unitStatus)
         }
     };
 

@@ -11,8 +11,11 @@ interface RightSidebarProps {
 }
 
 export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarProps) => {
-  const { isConnected, power, current, voltage, isOn, toggleLight } = useWebSocket(); 
-
+  const { unitStatus, toggleLight, sendMessage } = useWebSocket();
+  if (!selectedUnit) {
+    return <div className="w-1/4 p-10 pt-[6rem] text-lg mt-1 text-gray-600">No light selected</div>;
+  } 
+  const { isConnected, isOn, power, current, voltage } = unitStatus[selectedUnit?.id] || {};
   const [schedule, setSchedule] = useState({
     hourOn: 0,
     minuteOn: 0,
@@ -46,12 +49,8 @@ export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarPro
         "toggle", 
         !isOn);
     }
-    toggleLight();
+    toggleLight(selectedUnit.id);
   };  
-
-  if (!selectedUnit) {
-    return <div className="w-1/4 p-10 pt-[6rem] text-lg mt-1 text-gray-600">No light selected</div>;
-  }
 
   return (
     <div className="w-1/4 p-8 pt-[6rem] h-screen max-h-screen overflow-y-auto"> {/* Set height to screen with scroll */}
