@@ -4,7 +4,7 @@ import { CardHeader, CardContent } from "@/components/ui/card";
 import { Search } from 'lucide-react';
 import { Cluster } from '@/types/Cluster'; 
 import { Input } from "@/components/ui/input";
-import { NEXT_PUBLIC_WS_URL } from "@/lib/api";
+import { useWebSocket } from '@/contexts/WebsocketProvider'; // Import the WebSocket hook
 
 interface LeftSidebarProps {
   searchTerm: string;
@@ -20,7 +20,7 @@ export const LeftSidebar = ({
   selectedCluster, setSelectedCluster,
   filteredClusters, setSelectedUnit,
 }: LeftSidebarProps) => {
-  const [unitStatus, setUnitStatus] = useState<Record<number, { isOn: boolean, isConnected: boolean }>>({});
+  const { unitStatus, toggleLight } = useWebSocket();
 
   const handleClusterSelect = (value: string) => {
     const clusterId = parseInt(value, 10);
@@ -30,48 +30,14 @@ export const LeftSidebar = ({
 
   const handleUnitSelect = (clusterId: number, unit: Cluster['units'][0]) => {
     setSelectedUnit(unit); 
+
+    // Trigger the WebSocket action to toggle the light when a unit is selected
+    // toggleLight(unit.id);
   };
 
-  // const initializeWebSocket = (unitId: number) => {
-  //   const ws = new WebSocket(`${NEXT_PUBLIC_WS_URL}/unit/${unitId}/status`);
-
-  //   ws.onmessage = (event) => {
-  //     const data = JSON.parse(event.data);
-  //     const isConnected = data.power !== 0;
-  //     const isOn = data.toggle === 1;
-
-  //     setUnitStatus(prevState => ({
-  //       ...prevState,
-  //       [unitId]: { isOn, isConnected },
-  //     }));
-  //   };
-
-  //   ws.onerror = (error) => {
-  //     console.error('WebSocket error:', error);
-  //   };
-
-  //   ws.onclose = () => {
-  //     console.log('WebSocket connection closed');
-  //   };
-
-  //   return () => {
-  //     if (ws) {
-  //       ws.close();
-  //     }
-  //   };
-  // };
-
-  // useEffect(() => {
-  //   filteredClusters.forEach(cluster => {
-  //     cluster.units.forEach(unit => {
-  //       initializeWebSocket(unit.id);
-  //     });
-  //   });
-  // }, [filteredClusters]);
-
   const getStatusColor = (isConnected: boolean, isOn: boolean): string => {
-    if (!isConnected) return 'bg-gray-500'; // Disconnected
-    return isOn ? 'bg-green-500' : 'bg-red-500'; // Green for "on", Red for "off"
+    if (!isConnected) return 'bg-gray-500'; 
+    return isOn ? 'bg-green-500' : 'bg-red-500';
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -81,7 +47,7 @@ export const LeftSidebar = ({
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-14 border-b border-gray-200">
+      <div className="px-4 pt-14 border-b border-gray-200">
         <CardHeader>
           <h3 className="text-lg font-semibold mb-2">Danh sách Cụm</h3>
           <form onSubmit={handleSearch} className="flex-1">
