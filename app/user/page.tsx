@@ -5,6 +5,8 @@ import { Dialog, Transition, TransitionChild } from "@headlessui/react";
 import { createUser, deleteUser, getRoles, getUsers, Role, updateUser } from "@/lib/api";
 import Cookies from 'js-cookie';
 import Head from "next/head";
+import { useAPI } from "@/contexts/APIProvider";
+import { Navbar } from "@/components/NavBar";
 
 // Kiểu dữ liệu cho User nhận từ máy chủ
 type User = {
@@ -50,6 +52,7 @@ export default function UserManagement() {
     password: "",
     confirmPassword: "",
   });
+  const { permissions } = useAPI()
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
@@ -192,7 +195,10 @@ export default function UserManagement() {
         <title>Quản Lý Người Dùng</title>
         <meta name="description" content="Quản lý người dùng" />
       </Head>
+      <Navbar permissions={permissions} />
+
       <div className="min-h-screen bg-gray-100 p-4">
+        
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold mb-6">Quản Lý Người Dùng</h1>
 
@@ -299,12 +305,12 @@ export default function UserManagement() {
                               id="role"
                               value={newUser.role?.role_id || ""}
                               onChange={(e) =>
-                                setNewUser({ 
-                                  ...newUser, 
+                                setNewUser({
+                                  ...newUser,
                                   role: {
                                     role_id: Number(e.target.value),
                                     role_name: roles.find((role) => role.role_id === Number(e.target.value))?.role_name || ""
-                                  } 
+                                  }
                                 })
                               }
                               className="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -446,7 +452,7 @@ export default function UserManagement() {
                         <select
                           value={editingUser?.role.role_id || ""}
                           onChange={(e) =>
-                            setEditingUser({  
+                            setEditingUser({
                               ...editingUser!,
                               role: {
                                 role_id: Number(e.target.value),

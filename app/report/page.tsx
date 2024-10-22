@@ -7,6 +7,8 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { EnergyData } from "@/types/Report";
 import { View } from "@/lib/api";
+import { Navbar } from "@/components/NavBar";
+import { useAPI } from "@/contexts/APIProvider";
 
 interface ChartData {
   labels: string[];
@@ -24,6 +26,7 @@ const ReportPage: React.FC = () => {
     datasets: [],
   });
   const [view, setView] = useState<View>(View.HOURLY);
+  const { permissions } = useAPI()
 
   useEffect(() => {
     // Fetch data from HTTP endpoint
@@ -116,23 +119,28 @@ const ReportPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Energy Consumption Report</h1>
-      <div className="mb-4">
-        <select
-          value={view}
-          onChange={(e) => setView(e.target.value as View)}
-          className="p-2 border rounded"
-        >
-          <option value={View.HOURLY}>Theo giờ</option>
-          <option value={View.DAILY}>Theo ngày</option>
-          <option value={View.MONTHLY}>Theo tháng</option>
-        </select>
+    <>
+      <Navbar permissions={permissions} />
+
+      <div className="container mx-auto p-4">
+
+        <h1 className="text-2xl font-bold mb-4">Energy Consumption Report</h1>
+        <div className="mb-4">
+          <select
+            value={view}
+            onChange={(e) => setView(e.target.value as View)}
+            className="p-2 border rounded"
+          >
+            <option value={View.HOURLY}>Theo giờ</option>
+            <option value={View.DAILY}>Theo ngày</option>
+            <option value={View.MONTHLY}>Theo tháng</option>
+          </select>
+        </div>
+        <div className="h-96">
+          <Line data={chartData} options={options} />
+        </div>
       </div>
-      <div className="h-96">
-        <Line data={chartData} options={options} />
-      </div>
-    </div>
+    </>
   );
 };
 

@@ -1,4 +1,4 @@
-import { useWebSocket } from "@/providers/WebsocketProvider"; // Assuming WebSocketProvider is in context folder
+import { useWebSocket } from "@/contexts/WebsocketProvider"; // Assuming WebSocketProvider is in context folder
 import { Button } from "./ui/button";
 import { Cluster } from "@/types/Cluster";
 import { useState } from "react";

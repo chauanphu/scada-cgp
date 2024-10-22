@@ -6,6 +6,8 @@ import { Unit, Cluster, CreateUnit } from "@/types/Cluster";
 import { getClusters, createCluster, updateCluster, deleteCluster } from "@/lib/api";
 import { CreateClusterData } from "@/types/Cluster";
 import Cookies from "js-cookie";
+import { useAPI } from "@/contexts/APIProvider";
+import { Navbar } from "@/components/NavBar";
 
 const ClusterPage: React.FC = () => {
   const [clusters, setClusters] = useState<Cluster[]>([]);
@@ -21,6 +23,7 @@ const ClusterPage: React.FC = () => {
     name: "",
     units: [{ id: null, name: "", mac: "" }],
   });
+  const { permissions } = useAPI()
 
   useEffect(() => {
     fetchClusters();
@@ -124,7 +127,7 @@ const ClusterPage: React.FC = () => {
       const token = Cookies.get("token") || "";
       formData.id = clusterId;
       const updatedCluster = await updateCluster(token, clusterId, formData);
-      
+
       setClusters(
         clusters.map(cluster => (cluster.id === clusterId ? updatedCluster : cluster))
       );
@@ -161,7 +164,9 @@ const ClusterPage: React.FC = () => {
       <Head>
         <title>Quản Lý Cụm</title>
         <meta name="description" content="Quản lý các cụm và tủ điều khiển" />
-      </Head>
+      </Head>      
+      <Navbar permissions={permissions} />
+
       <div className="min-h-screen bg-gray-100 p-4">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold mb-6">Quản Lý Cụm</h1>

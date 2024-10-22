@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from "react";
-import { useAPI } from "./APIProvider";
+import { useAPI } from "@/contexts/APIProvider";
 import {NEXT_PUBLIC_WS_URL} from "@/lib/api";
 import { Schedule } from "@/types/Cluster";
 
