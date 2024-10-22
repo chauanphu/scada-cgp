@@ -1,6 +1,9 @@
 import { useWebSocket } from "@/providers/WebsocketProvider"; // Assuming WebSocketProvider is in context folder
 import { Button } from "./ui/button";
 import { Cluster } from "@/types/Cluster";
+import { useState } from "react";
+import { setCommand } from "@/lib/api";
+import Cookies from "js-cookie";
 
 interface RightSidebarProps {
   selectedUnit: Cluster["units"][0] | null;
@@ -9,12 +12,49 @@ interface RightSidebarProps {
 
 export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarProps) => {
   const { isConnected, power, current, voltage, isOn, toggleLight } = useWebSocket(); 
+
+  const [schedule, setSchedule] = useState({
+    hourOn: 0,
+    minuteOn: 0,
+    hourOff: 0,
+    minuteOff: 0
+  });
+  const token = Cookies.get("token") || "";
+  const handleScheduleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setSchedule(prevState => ({
+      ...prevState,
+      [name]: Number(value)
+    }));
+  };
+
+  const handleSetSchedule = () => {
+    if (isConnected && selectedUnit) {
+      setCommand(
+        token, 
+        selectedUnit.id,
+        "schedule", 
+        schedule);
+    }
+  };
+
+  const handleToggle = () => {
+    if (isConnected && selectedUnit) {
+      setCommand(
+        token, 
+        selectedUnit.id,
+        "toggle", 
+        !isOn);
+    }
+    toggleLight();
+  };  
+
   if (!selectedUnit) {
     return <div className="w-1/4 p-10 pt-[6rem] text-lg mt-1 text-gray-600">No light selected</div>;
   }
 
   return (
-    <div className="w-1/4 p-8 pt-[6rem] h-full">
+    <div className="w-1/4 p-8 pt-[6rem] h-screen max-h-screen overflow-y-auto"> {/* Set height to screen with scroll */}
       <h3 className="text-lg font-semibold mb-4">Thông tin - {selectedUnit.name}</h3>
 
       <div className="bg-white p-6 rounded-lg shadow space-y-4">
@@ -41,15 +81,109 @@ export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarPro
         </p>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex items-center space-x-4">
+        <span className="text-sm font-semibold">Tắt</span>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isOn}
+            onChange={handleToggle}
+            disabled={!isConnected}
+            className="sr-only peer"
+          />
+          <div
+            className={`w-11 h-6 bg-gray-200 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-checked:bg-green-600
+            peer-disabled:opacity-50 peer-disabled:cursor-not-allowed`}
+          />
+          <div
+            className={`absolute left-[2px] top-[2px] bg-white w-5 h-5 rounded-full transition-transform
+            peer-checked:translate-x-full peer-checked:border-white border-gray-300`}
+          />
+        </label>
+        <span className="text-sm font-semibold">Mở</span>
+      </div>
+
+      <div className="mt-8">
+        <h4 className="text-lg font-semibold mb-2">Hẹn giờ</h4>
+
+        <div className="space-y-4">
+          {/* ON Time Input */}
+          <div className="flex flex-col">
+            <label className="text-sm font-semibold mb-1">Bật</label>
+            <div className="flex space-x-2 items-center">
+              <div className="flex flex-col items-center">
+                <input
+                  type="number"
+                  name="hourOn"
+                  value={schedule.hourOn}
+                  onChange={handleScheduleChange}
+                  min={0}
+                  max={24}
+                  className="w-16 p-2 border rounded text-center"
+                  placeholder="HH"
+                />
+                <small className="text-xs text-gray-500">Giờ</small> {/* Label for Hours */}
+              </div>
+              <span>:</span>
+              <div className="flex flex-col items-center">
+                <input
+                  type="number"
+                  name="minuteOn"
+                  value={schedule.minuteOn}
+                  onChange={handleScheduleChange}
+                  min={0}
+                  max={59}
+                  className="w-16 p-2 border rounded text-center"
+                  placeholder="MM"
+                />
+                <small className="text-xs text-gray-500">Phút</small> {/* Label for Minutes */}
+              </div>
+            </div>
+          </div>
+
+          {/* OFF Time Input */}
+          <div className="flex flex-col">
+            <label className="text-sm font-semibold mb-1">Tắt</label>
+            <div className="flex space-x-2 items-center">
+              <div className="flex flex-col items-center">
+                <input
+                  type="number"
+                  name="hourOff"
+                  value={schedule.hourOff}
+                  onChange={handleScheduleChange}
+                  min={0}
+                  max={24}
+                  className="w-16 p-2 border rounded text-center"
+                  placeholder="HH"
+                />
+                <small className="text-xs text-gray-500">Giờ</small> {/* Label for Hours */}
+              </div>
+              <span>:</span>
+              <div className="flex flex-col items-center">
+                <input
+                  type="number"
+                  name="minuteOff"
+                  value={schedule.minuteOff}
+                  onChange={handleScheduleChange}
+                  min={0}
+                  max={59}
+                  className="w-16 p-2 border rounded text-center"
+                  placeholder="MM"
+                />
+                <small className="text-xs text-gray-500">Phút</small> {/* Label for Minutes */}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <Button
-          variant={isOn ? "default" : "outline"}
+          variant="default"
           size="sm"
-          onClick={toggleLight}
-          disabled={!isConnected}  
-          className={`w-full ${!isConnected ? "opacity-50 cursor-not-allowed" : ""}`}
+          onClick={handleSetSchedule}
+          disabled={!isConnected}
+          className={`mt-4 w-full ${!isConnected ? "opacity-50 cursor-not-allowed" : ""}`}
         >
-          {isConnected ? (isOn ? "Nhấn để Tắt" : "Nhấn để Mở") : "Mất kết nối"}
+          {isConnected ? "Lưu hẹn" : "Mất kết nối"}
         </Button>
       </div>
     </div>
