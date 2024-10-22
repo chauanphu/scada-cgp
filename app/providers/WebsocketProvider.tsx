@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from "react";
 import { useAPI } from "./APIProvider";
 import {NEXT_PUBLIC_WS_URL} from "@/lib/api";
+import { Schedule } from "@/types/Cluster";
 
 const WebSocketContext = createContext<any>(null);
 
@@ -99,18 +100,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     const sendMessage = (message: string) => {
         if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ message }));
+            socket.send(message);
         } else {
             console.warn("WebSocket is not open.");
         }
     };
 
     const toggleLight = () => {
-        if (isOn) {
-            sendMessage(JSON.stringify({ toggle: 0 }));
-        } else {
-            sendMessage(JSON.stringify({ toggle: 1 }));
-        }
+        sendMessage(JSON.stringify({ toggle: !isOn }));
         setIsOn(prevState => !prevState);
     };
 
