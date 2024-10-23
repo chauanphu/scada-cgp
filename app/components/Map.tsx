@@ -7,8 +7,8 @@ import iconDisable from "@/images/markers/disable.png";
 import { Cluster, Unit } from "@/types/Cluster";
 import { RightSidebar } from "./RightSidebar";
 import { LatLngExpression } from "leaflet";
+import { UnitStatus, useWebSocket } from "@/contexts/WebsocketProvider";
 
-// Dynamically import react-leaflet components to avoid SSR issues
 const MapContainer = dynamic(() => import("./MapContainerWrapper"), {
   ssr: false,
 });
@@ -34,16 +34,10 @@ export const Map = ({
   setSelectedUnit,
   clusters,
 }: MapProps) => {
-  const [unitStatus, setUnitStatus] = useState<
-    Record<number, { isOn: boolean; isConnected: boolean }>
-  >({});
-
-  const [leafletMap, setLeafletMap] = useState<typeof import("leaflet") | null>(
-    null
-  );
+  const { unitStatus } = useWebSocket();
+  const [leafletMap, setLeafletMap] = useState<typeof import("leaflet") | null>(null);
 
   useEffect(() => {
-    // Dynamically import Leaflet on the client side
     if (typeof window !== "undefined") {
       import("leaflet").then((L) => {
         setLeafletMap(L);
@@ -51,61 +45,24 @@ export const Map = ({
     }
   }, []);
 
-  const panToUnit = (map: any, unit: Unit) => {
-    if (map && unit.latitude && unit.longitude) {
-      map.setView([unit.latitude, unit.longitude - 0.001], 22);
+  const panToUnit = (map: any, unit: UnitStatus) => {
+    if (map && unit.gps_lat && unit.gps_log) {
+      map.setView([unit.gps_lat, unit.gps_log - 0.001], 22);
     }
   };
 
-  const initializeWebSocket = (unitId: number) => {
-    const ws = new WebSocket(
-      `ws://api.cgp.captechvn.com/ws/unit/${unitId}/status`
-    );
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const isConnected = data.power !== 0;
-      const isOn = data.toggle === 1;
-
-      setUnitStatus((prevState) => ({
-        ...prevState,
-        [unitId]: { isOn, isConnected },
-      }));
-    };
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    ws.onclose = () => {
-      console.log("WebSocket connection closed");
-    };
-
-    return () => {
-      if (ws) {
-        ws.close();
-      }
-    };
-  };
-
-  // Use a callback ref to get access to the map instance
   const handleMapRef = (mapInstance: any) => {
     if (mapInstance && selectedUnit) {
       panToUnit(mapInstance, selectedUnit);
-      const cleanup = initializeWebSocket(selectedUnit.id);
-      return () => {
-        if (cleanup) cleanup();
-      };
     }
   };
 
-  // Ensure that any code relying on Leaflet is only executed on the client
   const GetIcon = (
     iconSize: number,
     isConnected: boolean,
     isLightOn: boolean
   ) => {
-    if (!leafletMap) return undefined; // Ensure Leaflet is loaded
+    if (!leafletMap) return undefined; 
     const size: [number, number] = [iconSize, iconSize];
     const L = leafletMap;
 
@@ -120,40 +77,41 @@ export const Map = ({
     }
   };
 
+  const handleMarkerClick = (unit: Unit) => {
+    setSelectedUnit(unit);
+  };
+
   return (
     <div className="flex">
       {leafletMap && (
         <MapContainer
-          whenCreated={handleMapRef} // Use this callback instead of ref to get the map instance
+          whenCreated={handleMapRef}
           center={[10.8231, 106.6297] as LatLngExpression}
           zoom={22}
           className="h-screen w-full"
         >
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {clusters.length > 0 &&
-            clusters.flatMap((cluster) =>
-              cluster.units.filter(
-                (unit) => unit.latitude && unit.longitude
-              ).map((unit) => {
-                const status = unitStatus[unit.id] || {
-                  isOn: false,
-                  isConnected: false,
-                };
-                const icon = GetIcon(30, status.isConnected, status.isOn);
-                return (
-                  <Marker
-                    key={unit.id}
-                    position={
-                      [unit.latitude, unit.longitude] as LatLngExpression
-                    }
-                    icon={icon}
-                    eventHandlers={{
-                      click: () => setSelectedUnit(unit),
-                    }}
-                  />
-                );
-              })
-            )}
+          {Object.values(unitStatus).map((unit: any) => {
+            const icon = GetIcon(30, unit.isConnected, unit.isOn);
+            const unitData: Unit = {
+              id: unit.id,
+              latitude: unit.gps_lat,
+              longitude: unit.gps_log,
+              name: unit.name || "Unknown",
+              mac: unit.mac || "Unknown",
+            };
+
+            return (
+              <Marker
+                key={unit.id}
+                position={[unit.gps_lat, unit.gps_log] as LatLngExpression}
+                icon={icon}
+                eventHandlers={{
+                  click: () => handleMarkerClick(unitData),
+                }}
+              />
+            );
+          })}
         </MapContainer>
       )}
       <RightSidebar
