@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CardHeader, CardContent } from "@/components/ui/card";
 import { Search } from 'lucide-react';
-import { Cluster } from '@/types/Cluster'; 
+import { Cluster, Unit } from '@/types/Cluster'; 
 import { Input } from "@/components/ui/input";
 import { useWebSocket } from '@/contexts/WebsocketProvider'; // Import the WebSocket hook
 
@@ -12,7 +12,7 @@ interface LeftSidebarProps {
   selectedCluster: Cluster | null;
   setSelectedCluster: React.Dispatch<React.SetStateAction<Cluster | null>>;
   filteredClusters: Cluster[];
-  setSelectedUnit: React.Dispatch<React.SetStateAction<Cluster['units'][0] | null>>;
+  setSelectedUnit: (unit: Unit) => void;
 }
 
 export const LeftSidebar = ({
@@ -20,7 +20,7 @@ export const LeftSidebar = ({
   selectedCluster, setSelectedCluster,
   filteredClusters, setSelectedUnit,
 }: LeftSidebarProps) => {
-  const { unitStatus, toggleLight } = useWebSocket();
+  const { unitStatus } = useWebSocket();
 
   const handleClusterSelect = (value: string) => {
     const clusterId = parseInt(value, 10);
@@ -28,8 +28,16 @@ export const LeftSidebar = ({
     setSelectedCluster(selected);
   };
 
-  const handleUnitSelect = (clusterId: number, unit: Cluster['units'][0]) => {
-    setSelectedUnit(unit); 
+  const handleUnitSelect = (clusterId: number, unit: Unit) => {
+    const status = unitStatus[unit.id]
+    if (!status) return;
+    setSelectedUnit(
+      {
+        ...unit,
+        latitude: status.gps_lat,
+        longitude: status.gps_log,
+      }
+    ); 
 
     // Trigger the WebSocket action to toggle the light when a unit is selected
     // toggleLight(unit.id);

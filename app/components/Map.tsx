@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import iconOn from "@/images/markers/on.png";
 import iconOff from "@/images/markers/off.png";
@@ -7,19 +6,9 @@ import iconDisable from "@/images/markers/disable.png";
 import { Cluster, Unit } from "@/types/Cluster";
 import { RightSidebar } from "./RightSidebar";
 import { LatLngExpression } from "leaflet";
-import { UnitStatus, useWebSocket } from "@/contexts/WebsocketProvider";
-
-const MapContainer = dynamic(() => import("./MapContainerWrapper"), {
-  ssr: false,
-});
-const TileLayer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-const Marker = dynamic(
-  () => import("react-leaflet").then((mod) => mod.Marker),
-  { ssr: false }
-);
+import { MapContainer, Marker, TileLayer } from "react-leaflet";
+import { useWebSocket } from "@/contexts/WebsocketProvider";
+import L from "leaflet"; // Import leaflet directly
 
 interface MapProps {
   selectedUnit: Unit | null;
@@ -34,86 +23,85 @@ export const Map = ({
   setSelectedUnit,
   clusters,
 }: MapProps) => {
+  const mapRef = useRef<L.Map | null>(null);
   const { unitStatus } = useWebSocket();
-  const [leafletMap, setLeafletMap] = useState<typeof import("leaflet") | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      import("leaflet").then((L) => {
-        setLeafletMap(L);
-      });
+    if (mapRef.current && selectedUnit) {
+      if (selectedUnit.latitude && selectedUnit.longitude) {
+        mapRef.current.setView(
+          [selectedUnit.longitude, selectedUnit.latitude - 0.001], // Latitude first
+          22
+        );
+      }
     }
-  }, []);
-
-  const panToUnit = (map: any, unit: UnitStatus) => {
-    if (map && unit.gps_lat && unit.gps_log) {
-      map.setView([unit.gps_lat, unit.gps_log - 0.001], 22);
-    }
-  };
-
-  const handleMapRef = (mapInstance: any) => {
-    if (mapInstance && selectedUnit) {
-      panToUnit(mapInstance, selectedUnit);
-    }
-  };
+  }, [selectedUnit]);
 
   const GetIcon = (
     iconSize: number,
     isConnected: boolean,
-    isLightOn: boolean
+    isLightOn: boolean,
+    unitName: string
   ) => {
-    if (!leafletMap) return undefined; 
-    const size: [number, number] = [iconSize, iconSize];
-    const L = leafletMap;
+    let iconUrl = "";
 
     if (isConnected) {
-      if (isLightOn) {
-        return L.icon({ iconUrl: iconOn.src, iconSize: size });
-      } else {
-        return L.icon({ iconUrl: iconOff.src, iconSize: size });
-      }
+      iconUrl = isLightOn ? iconOn.src : iconOff.src;
     } else {
-      return L.icon({ iconUrl: iconDisable.src, iconSize: size });
+      iconUrl = iconDisable.src;
     }
+
+    // Create an HTML-based icon using L.divIcon
+    return L.divIcon({
+      html: `
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+          <img src="${iconUrl}" style="width: ${iconSize}px; height: ${iconSize}px;" />
+          <span style="font-size: 12px; background: rgba(255, 255, 255, 0.8); padding: 2px 4px; border-radius: 4px; margin-top: 4px;">
+            ${unitName}
+          </span>
+        </div>
+      `,
+      iconSize: [iconSize, iconSize],
+      className: "custom-leaflet-icon",
+    });
   };
 
-  const handleMarkerClick = (unit: Unit) => {
-    setSelectedUnit(unit);
+  const getMarker = (unit: Unit, status: any) => {
+    const unitData: Unit = {
+      id: unit.id,
+      latitude: unit.latitude,
+      longitude: unit.longitude,
+      name: unit.name || "Unknown",
+      mac: unit.mac || "Unknown",
+    };
+
+    const icon = GetIcon(25, status.isConnected, status.isOn, unitData.name);
+
+    return (
+      <Marker
+        key={unit.id}
+        position={[unitData.longitude, unitData.latitude] as LatLngExpression}
+        icon={icon}
+        eventHandlers={{
+          click: () => setSelectedUnit(unitData),
+        }}
+      />
+    );
   };
 
   return (
     <div className="flex">
-      {leafletMap && (
-        <MapContainer
-          whenCreated={handleMapRef}
-          center={[10.8231, 106.6297] as LatLngExpression}
-          zoom={22}
-          className="h-screen w-full"
-        >
-          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {Object.values(unitStatus).map((unit: any) => {
-            const icon = GetIcon(30, unit.isConnected, unit.isOn);
-            const unitData: Unit = {
-              id: unit.id,
-              latitude: unit.gps_lat,
-              longitude: unit.gps_log,
-              name: unit.name || "Unknown",
-              mac: unit.mac || "Unknown",
-            };
-
-            return (
-              <Marker
-                key={unit.id}
-                position={[unit.gps_lat, unit.gps_log] as LatLngExpression}
-                icon={icon}
-                eventHandlers={{
-                  click: () => handleMarkerClick(unitData),
-                }}
-              />
-            );
-          })}
-        </MapContainer>
-      )}
+      <MapContainer
+        ref={mapRef}
+        center={[10.8231, 106.6297] as LatLngExpression}
+        zoom={22}
+        className="h-screen w-full"
+      >
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        {selectedUnit &&
+          unitStatus &&
+          getMarker(selectedUnit, unitStatus[selectedUnit.id])}
+      </MapContainer>
       <RightSidebar
         selectedUnit={selectedUnit}
         handleToggleUnit={handleToggleUnit}

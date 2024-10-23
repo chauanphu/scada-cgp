@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAPI } from './APIProvider';
 import { NEXT_PUBLIC_WS_URL } from '@/lib/api';
+import { UnitStatus } from '@/types/Cluster';
 
 const WebSocketContext = createContext<any>(null);
 

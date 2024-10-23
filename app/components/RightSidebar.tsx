@@ -1,7 +1,7 @@
 import { useWebSocket } from "@/contexts/WebsocketProvider"; // Assuming WebSocketProvider is in context folder
 import { Button } from "./ui/button";
 import { Cluster } from "@/types/Cluster";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { setCommand } from "@/lib/api";
 import Cookies from "js-cookie";
 
@@ -11,11 +11,21 @@ interface RightSidebarProps {
 }
 
 export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarProps) => {
-  const { unitStatus, toggleLight, sendMessage } = useWebSocket();
-  if (!selectedUnit) {
-    return <div className="w-1/4 p-10 pt-[6rem] text-lg mt-1 text-gray-600">No light selected</div>;
-  } 
-  const { isConnected, isOn, power, current, voltage } = unitStatus[selectedUnit?.id] || {};
+  const { unitStatus, toggleLight } = useWebSocket();
+  const [unitData, setUnitData] = useState({
+    isConnected: false,
+    isOn: false,
+    power: 0,
+    current: 0,
+    voltage: 0
+  });
+
+  useEffect(() => {
+    if (selectedUnit) {
+      const { isConnected, isOn, power, current, voltage } = unitStatus[selectedUnit.id] || {};
+      setUnitData({ isConnected, isOn, power, current, voltage });
+    }
+  }, [selectedUnit, unitStatus]);
   const [schedule, setSchedule] = useState({
     hourOn: 0,
     minuteOn: 0,
@@ -32,7 +42,7 @@ export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarPro
   };
 
   const handleSetSchedule = () => {
-    if (isConnected && selectedUnit) {
+    if (unitData.isConnected && selectedUnit) {
       setCommand(
         token, 
         selectedUnit.id,
@@ -42,16 +52,25 @@ export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarPro
   };
 
   const handleToggle = () => {
-    if (isConnected && selectedUnit) {
+    if (unitData.isConnected && selectedUnit) {
       setCommand(
         token, 
         selectedUnit.id,
         "toggle", 
-        !isOn);
+        !unitData.isOn);
+        toggleLight(selectedUnit.id);
     }
-    toggleLight(selectedUnit.id);
   };  
-
+  if (!selectedUnit) {
+    return (
+      <div className="w-1/4 p-8 pt-[6rem] h-screen max-h-screen overflow-y-auto">
+        <h3 className="text-lg font-semibold mb-4">Thông tin</h3>
+        <div className="bg-white p-6 rounded-lg shadow space-y-4">
+          <p className="text-lg font-semibold">Chọn thiết bị để xem thông tin chi tiết</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="w-1/4 p-8 pt-[6rem] h-screen max-h-screen overflow-y-auto"> {/* Set height to screen with scroll */}
       <h3 className="text-lg font-semibold mb-4">Thông tin - {selectedUnit.name}</h3>
@@ -59,23 +78,23 @@ export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarPro
       <div className="bg-white p-6 rounded-lg shadow space-y-4">
         <p className="text-lg font-semibold">
           Công suất tiêu thụ:
-          <span className="font-normal ml-2">{power} W</span>
+          <span className="font-normal ml-2">{unitData.power} W</span>
         </p>
 
         <p className="text-lg font-semibold">
           Điện áp đầu vào:
-          <span className="font-normal ml-2">{voltage} V</span>
+          <span className="font-normal ml-2">{unitData.voltage} V</span>
         </p>
 
         <p className="text-lg font-semibold">
           Dòng điện:
-          <span className="font-normal ml-2">{current} A</span>
+          <span className="font-normal ml-2">{unitData.current} A</span>
         </p>
 
         <p className="text-lg font-semibold">
           Trạng thái:
-          <span className={`font-bold ml-2 ${isConnected ? (isOn ? "text-green-600" : "text-gray-600") : "text-red-600"}`}>
-            {isConnected ? (isOn ? " Mở" : " Tắt") : " Mất kết nối"}
+          <span className={`font-bold ml-2 ${unitData.isConnected ? (unitData.isOn ? "text-green-600" : "text-gray-600") : "text-red-600"}`}>
+            {unitData.isConnected ? (unitData.isOn ? " Mở" : " Tắt") : " Mất kết nối"}
           </span>
         </p>
       </div>
@@ -85,9 +104,9 @@ export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarPro
         <label className="relative inline-flex items-center cursor-pointer">
           <input
             type="checkbox"
-            checked={isOn}
+            checked={unitData.isOn ?? false}
             onChange={handleToggle}
-            disabled={!isConnected}
+            disabled={!unitData.isConnected}
             className="sr-only peer"
           />
           <div
@@ -114,7 +133,7 @@ export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarPro
                 <input
                   type="number"
                   name="hourOn"
-                  value={schedule.hourOn}
+                  value={schedule.hourOn ?? 0}
                   onChange={handleScheduleChange}
                   min={0}
                   max={24}
@@ -128,7 +147,7 @@ export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarPro
                 <input
                   type="number"
                   name="minuteOn"
-                  value={schedule.minuteOn}
+                  value={schedule.minuteOn ?? 0}
                   onChange={handleScheduleChange}
                   min={0}
                   max={59}
@@ -148,7 +167,7 @@ export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarPro
                 <input
                   type="number"
                   name="hourOff"
-                  value={schedule.hourOff}
+                  value={schedule.hourOff ?? 0}
                   onChange={handleScheduleChange}
                   min={0}
                   max={24}
@@ -162,7 +181,7 @@ export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarPro
                 <input
                   type="number"
                   name="minuteOff"
-                  value={schedule.minuteOff}
+                  value={schedule.minuteOff ?? 0}
                   onChange={handleScheduleChange}
                   min={0}
                   max={59}
@@ -179,10 +198,10 @@ export const RightSidebar = ({ selectedUnit, handleToggleUnit }: RightSidebarPro
           variant="default"
           size="sm"
           onClick={handleSetSchedule}
-          disabled={!isConnected}
-          className={`mt-4 w-full ${!isConnected ? "opacity-50 cursor-not-allowed" : ""}`}
+          disabled={!unitData.isConnected}
+          className={`mt-4 w-full ${!unitData.isConnected ? "opacity-50 cursor-not-allowed" : ""}`}
         >
-          {isConnected ? "Lưu hẹn" : "Mất kết nối"}
+          {unitData.isConnected ? "Lưu hẹn" : "Mất kết nối"}
         </Button>
       </div>
     </div>
