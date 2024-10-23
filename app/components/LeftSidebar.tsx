@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CardHeader, CardContent } from "@/components/ui/card";
 import { Search } from 'lucide-react';
 import { Cluster, Unit } from '@/types/Cluster'; 
 import { Input } from "@/components/ui/input";
 import { useWebSocket } from '@/contexts/WebsocketProvider'; // Import the WebSocket hook
+import { Dialog, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button"; // Assuming you have a button component
 
 interface LeftSidebarProps {
   searchTerm: string;
@@ -21,6 +23,8 @@ export const LeftSidebar = ({
   filteredClusters, setSelectedUnit,
 }: LeftSidebarProps) => {
   const { unitStatus } = useWebSocket();
+  const [isErrorDialogOpen, setIsErrorDialogOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleClusterSelect = (value: string) => {
     const clusterId = parseInt(value, 10);
@@ -29,18 +33,21 @@ export const LeftSidebar = ({
   };
 
   const handleUnitSelect = (clusterId: number, unit: Unit) => {
-    const status = unitStatus[unit.id]
+    const status = unitStatus[unit.id];
     if (!status) return;
-    setSelectedUnit(
-      {
-        ...unit,
-        latitude: status.gps_lat,
-        longitude: status.gps_log,
-      }
-    ); 
 
-    // Trigger the WebSocket action to toggle the light when a unit is selected
-    // toggleLight(unit.id);
+    const { gps_lat, gps_log } = status;
+    if (gps_lat === undefined || gps_log === undefined) {
+      setErrorMessage(`Thiết bị (${unit.name}) đã mất kết nối.`);
+      setIsErrorDialogOpen(true);
+      return;
+    }
+
+    setSelectedUnit({
+      ...unit,
+      latitude: gps_lat,
+      longitude: gps_log,
+    });
   };
 
   const getStatusColor = (isConnected: boolean, isOn: boolean): string => {
@@ -112,6 +119,18 @@ export const LeftSidebar = ({
           ))}
         </CardContent>
       </div>
+
+      <Dialog open={isErrorDialogOpen} onOpenChange={setIsErrorDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Báo Lỗi</DialogTitle>
+            <DialogDescription>{errorMessage}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setIsErrorDialogOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

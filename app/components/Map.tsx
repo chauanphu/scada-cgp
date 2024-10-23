@@ -53,12 +53,12 @@ export const Map = ({
     // Create an HTML-based icon using L.divIcon
     return L.divIcon({
       html: `
-        <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
-          <img src="${iconUrl}" style="width: ${iconSize}px; height: ${iconSize}px;" />
-          <span style="font-size: 12px; background: rgba(255, 255, 255, 0.8); padding: 2px 4px; border-radius: 4px; margin-top: 4px;">
-            ${unitName}
-          </span>
-        </div>
+        <div style="display: flex; align-items: center; justify-content: center; text-align: center;">
+        <img src="${iconUrl}" style="width: ${iconSize}px; height: ${iconSize}px;" />
+        <span style="font-size: 12px; background: rgba(255, 255, 255, 0.8); padding: 2px 4px; border-radius: 4px; margin-left: 8px;">
+          ${unitName}
+        </span>
+      </div>
       `,
       iconSize: [iconSize, iconSize],
       className: "custom-leaflet-icon",
