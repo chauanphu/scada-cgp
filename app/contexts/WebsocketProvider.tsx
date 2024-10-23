@@ -16,6 +16,24 @@ export type UnitStatus = {
     voltage: number;
 };
 
+type AliveResponse = {
+    alive: "0" | "1",
+    time: string,
+}
+
+type StatusResponse = {
+    time: string;
+    power: number;
+    power_factor: number;
+    current: number;
+    voltage: number;
+    frequency: number;
+    gps_log: number;
+    gps_lat: number;
+    total_energy: number;
+    toggle: number;
+}
+
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }) => {
     const { token, isAuthenticated, clusters } = useAPI();
     const [sockets, setSockets] = useState<Map<number, WebSocket>>(new Map());
@@ -25,57 +43,37 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         const connectWebSocket = (unitId: number) => {
             const ws = new WebSocket(`${NEXT_PUBLIC_WS_URL}/unit/${unitId}/status`);
 
-            ws.onopen = () => {
-                console.log(`WebSocket Connected for unit ${unitId}`);
-            };
-
             ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const isConnected = data.power !== 0;
-                const isOn = data.toggle === 1;
-
-                setUnitStatus((prevState) => ({
-                    ...prevState,
-                    [unitId]: { 
-                        isOn, 
-                        isConnected,
-                        power: data.power,
-                        current: data.current,
-                        voltage: data.voltage,
-                    },
-                }));
-
-                // Handle "alive" status if necessary
-                if (data.alive === "0") {
+                const data: AliveResponse | StatusResponse = JSON.parse(event.data);
+                // Handle alive message
+                if ("alive" in data && data.alive === "0") {
                     setUnitStatus((prevState) => ({
                         ...prevState,
-                        [unitId]: { 
-                            ...prevState[unitId], 
-                            isConnected: false,
-                            power: 0,
-                            current: 0,
-                            voltage: 0,
+                        [unitId]: { ...prevState[unitId], isConnected: false },
+                    }));
+                } else if ("power" in data) {
+                    setUnitStatus((prevState) => ({
+                        ...prevState,
+                        [unitId]: {
+                            ...prevState[unitId],
+                            isConnected: true,
+                            isOn: data.toggle === 1,
+                            power: data.power,
+                            current: data.current,
+                            voltage: data.voltage,
                         },
                     }));
-                }
+                }     
             };
 
             ws.onerror = (error) => {
-                console.error(`WebSocket Error for unit ${unitId}:`, error);
+                // console.error(`WebSocket Error for unit ${unitId}:`, error);
             };
-
-            ws.onclose = () => {
-                console.log(`WebSocket Disconnected for unit ${unitId}`);
-                // Attempt to reconnect after 3 seconds
-                setTimeout(() => {
-                    // connectWebSocket(unitId);
-                }, 3000);
-            };
-
             return ws;
         };
 
         if (isAuthenticated && token && clusters.length > 0) {
+            // 
             const newSockets = new Map<number, WebSocket>();
             clusters.forEach((cluster: { units: any[]; }) => {
                 cluster.units.forEach(unit => {
@@ -102,8 +100,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     const toggleLight = (unitId: number) => {
         const status = unitStatus[unitId];
-        console.log("Unit id: ", unitId)
-        console.log("Unit: ", status)
         if (status) {
             // sendMessage(unitId, JSON.stringify({ toggle: status.isOn ? 0 : 1 }));
             setUnitStatus((prevState) => ({
