@@ -25,12 +25,11 @@ export const Map = ({
 }: MapProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const { unitStatus } = useWebSocket();
-
   useEffect(() => {
     if (mapRef.current && selectedUnit) {
       if (selectedUnit.latitude && selectedUnit.longitude) {
         mapRef.current.setView(
-          [selectedUnit.longitude, selectedUnit.latitude - 0.001], // Latitude first
+          [selectedUnit.latitude, selectedUnit.longitude - 0.001], // Latitude first
           22
         );
       }
@@ -80,7 +79,7 @@ export const Map = ({
     return (
       <Marker
         key={unit.id}
-        position={[unitData.longitude, unitData.latitude] as LatLngExpression}
+        position={[unitData.latitude, unitData.longitude] as LatLngExpression}
         icon={icon}
         eventHandlers={{
           click: () => setSelectedUnit(unitData),

@@ -2,7 +2,7 @@
 // Adjusted to ensure API_URL is securely accessed on the server side.
 
 import { PermissionEnum } from "@/components/NavBar";
-import { Cluster, ClusterFull, CreateClusterData } from "@/types/Cluster";
+import { Cluster, ClusterFull, CreateClusterData, Schedule } from "@/types/Cluster";
 import { EnergyData } from "@/types/Report";
 
 export const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -353,7 +353,6 @@ export async function setCommand(
     type,
     payload,
   });
-  console.log('payload', body);
   const response = await fetch(`${NEXT_PUBLIC_API_URL}/clusters/units/${unitId}`, {
     method: 'PATCH',
     headers: {
