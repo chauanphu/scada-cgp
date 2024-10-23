@@ -9,17 +9,6 @@ interface WebSocketProviderProps {
     children: ReactNode;
 }
 
-export type UnitStatus = {
-    id: number;
-    isOn: boolean;
-    isConnected: boolean;
-    power: number;
-    current: number;
-    voltage: number;
-    gps_log: number;
-    gps_lat: number;
-};
-
 type AliveResponse = {
     alive: "0" | "1",
     time: string,
@@ -66,6 +55,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
                             power: data.power,
                             current: data.current,
                             voltage: data.voltage,
+                            gps_lat: data.gps_lat,
+                            gps_log: data.gps_log,
                         },
                     }));
                 }     

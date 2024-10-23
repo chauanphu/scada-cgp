@@ -7,6 +7,17 @@ export type Unit = {
     toggle?: boolean;
   }
 
+  export type UnitStatus = {
+    id: number;
+    isOn: boolean;
+    isConnected: boolean;
+    power: number;
+    current: number;
+    voltage: number;
+    gps_log: number;
+    gps_lat: number;
+};
+
 export type Cluster = {
     id: number;
     name: string;
